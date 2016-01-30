@@ -1,6 +1,6 @@
 var sampleRate = 44100; /* hard-coded in Flash player */
 
-function AudioPlayer(generator, opts) {
+function AudioPlayer(generator, audioBuffers, opts) {
 	if (!opts) opts = {};
 	var latency = opts.latency || 1;
 	var checkInterval = latency * 100 /* in ms */
@@ -53,16 +53,19 @@ function AudioPlayer(generator, opts) {
 				node.disconnect();
 				return;
 			}
-			
+
 			var dataLeft = e.outputBuffer.getChannelData(0);
 			var dataRight = e.outputBuffer.getChannelData(1);
 
-			var generate = generator.generate(bufferSize);
+			var generate = generator.generate(bufferSize, context);
 
+
+			/*
 			for (var i = 0; i < bufferSize; ++i) {
 				dataLeft[i] = generate[i*2];
 				dataRight[i] = generate[i*2+1];
 			}
+			*/
 		}
 		
 		// start

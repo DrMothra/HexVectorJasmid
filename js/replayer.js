@@ -1,9 +1,11 @@
-function Replayer(midiFile, synth) {
+function Replayer(midiFile, synth, soundBuffers) {
 	var trackStates = [];
 	var beatsPerMinute = 120;
 	var ticksPerBeat = midiFile.header.ticksPerBeat;
 	var channelCount = 16;
 	var trackMute = [];
+    var audioBuffers = soundBuffers;
+    var sources = {};
 	
 	for (var i = 0; i < midiFile.tracks.length; i++) {
 		trackMute.push(false);
@@ -102,8 +104,9 @@ function Replayer(midiFile, synth) {
 	
 	getNextEvent();
 	
-	function generate(samples) {
+	function generate(samples, context) {
 		var data = new Array(samples*2);
+        var audioBuffer;
 		var samplesRemaining = samples;
 		var dataOffset = 0;
 		
@@ -118,7 +121,7 @@ function Replayer(midiFile, synth) {
 					samplesToNextEvent -= samplesToGenerate;
 				}
 				
-				handleEvent();
+				handleEvent(context);
 				getNextEvent();
 			} else {
 				/* generate samples to end of buffer */
@@ -126,13 +129,25 @@ function Replayer(midiFile, synth) {
 					synth.generateIntoBuffer(samplesRemaining, data, dataOffset);
 					samplesToNextEvent -= samplesRemaining;
 				}
+                //Use soundfont data
+                /*
+                var channel = 0;
+                var instrument = 0;
+                var noteNum = nextEventInfo.event.noteNumber;
+                if(noteNum === undefined) {
+                    noteNum = 21;
+                }
+                var bufferId = instrument + '' + noteNum.toString();
+                audioBuffer = audioBuffers[bufferId];
+                */
 				break;
 			}
 		}
-		return data;
+		//return data;
+        return audioBuffer;
 	}
 	
-	function handleEvent() {
+	function handleEvent(context) {
 		var event = nextEventInfo.event;
 		var track = nextEventInfo.track;
 		switch (event.type) {
@@ -147,9 +162,59 @@ function Replayer(midiFile, synth) {
 					case 'noteOn':
 						if(trackMute[track]) event.velocity = 0;
 						channels[event.channel].noteOn(event.noteNumber, event.velocity);
+                        var channel = 0;
+                        var instrument = 0;
+                        var noteNum = nextEventInfo.event.noteNumber;
+                        if(noteNum === undefined) {
+                            noteNum = 21;
+                        }
+                        var bufferId = instrument + '' + noteNum.toString();
+                        var buffer = audioBuffers[bufferId];
+                        var source = context.createBufferSource();
+                        source.buffer = buffer;
+
+                        var gain = (event.velocity / 127) * (127 / 127) * 2 - 1;
+                        source.connect(context.destination);
+                        source.playbackRate.value = 1; // pitch shift
+                        source.gainNode = context.createGain(); // gain
+                        source.gainNode.connect(context.destination);
+                        source.gainNode.gain.value = Math.min(1.0, Math.max(-1.0, gain));
+                        source.connect(source.gainNode);
+
+                        source.start(0);
+                        var channelId = 0;
+                        sources[channelId + '' + noteNum.toString()] = source;
+
 						break;
 					case 'noteOff':
 						channels[event.channel].noteOff(event.noteNumber, event.velocity);
+                        var channel = 0;
+                        var instrument = 0;
+                        var noteNum = nextEventInfo.event.noteNumber;
+                        var bufferId = instrument + '' + noteNum.toString();
+                        var buffer = audioBuffers[bufferId];
+                        if (buffer) {
+                            var source = sources[channelId + '' + noteNum.toString()];
+                            if (source) {
+                                if (source.gainNode) {
+                                    // @Miranet: 'the values of 0.2 and 0.3 could of course be used as
+                                    // a 'release' parameter for ADSR like time settings.'
+                                    // add { 'metadata': { release: 0.3 } } to soundfont files
+                                    //var gain = source.gainNode.gain;
+                                    //gain.linearRampToValueAtTime(gain.value, delay);
+                                    //gain.linearRampToValueAtTime(-1.0, delay + 0.3);
+                                }
+                                ///
+                                if (source.noteOff) {
+                                    source.noteOff(0.5);
+                                } else {
+                                    source.stop(0.5);
+                                }
+
+                                ///
+                                delete sources[channelId + '' + noteNum.toString()];
+                            }
+                        }
 						break;
 					case 'programChange':
 						//console.log('program change to ' + event.programNumber);
