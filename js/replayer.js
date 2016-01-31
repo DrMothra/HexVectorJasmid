@@ -4,8 +4,11 @@ function Replayer(midiFile, synth, soundBuffers) {
 	var ticksPerBeat = midiFile.header.ticksPerBeat;
 	var channelCount = 16;
 	var trackMute = [];
+	var eventsToProcess = [];
     var audioBuffers = soundBuffers;
     var sources = {};
+	var webkitAudio = window.AudioContext || window.webkitAudioContext;
+	var context = new webkitAudio();
 	
 	for (var i = 0; i < midiFile.tracks.length; i++) {
 		trackMute.push(false);
@@ -104,7 +107,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 	
 	getNextEvent();
 	
-	function generate(samples, context) {
+	function generate(samples) {
 		var data = new Array(samples*2);
         var audioBuffer;
 		var samplesRemaining = samples;
@@ -121,7 +124,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 					samplesToNextEvent -= samplesToGenerate;
 				}
 				
-				handleEvent(context);
+				handleEvent();
 				getNextEvent();
 			} else {
 				/* generate samples to end of buffer */
@@ -143,13 +146,40 @@ function Replayer(midiFile, synth, soundBuffers) {
 				break;
 			}
 		}
-		//return data;
-        return audioBuffer;
+		return data;
+        //return audioBuffer;
 	}
-	
-	function handleEvent(context) {
-		var event = nextEventInfo.event;
-		var track = nextEventInfo.track;
+
+	function processEvents(currentTime, nextTimeInterval) {
+		//Get and process midi events
+		//DEBUG
+		console.log("Current = ", currentTime);
+		var keepProcessing = true;
+		while(keepProcessing) {
+			getNextEvent();
+			if(nextEventInfo != null) {
+				if((currentTime + nextTimeInterval) >= nextEventInfo.ticksToEvent) {
+					eventsToProcess.push(nextEventInfo);
+				} else {
+					keepProcessing = false;
+				}
+			} else {
+				keepProcessing = false;
+			}
+		}
+		for(var i=0; i<eventsToProcess.length; ++i) {
+			handleEvent(eventsToProcess[i]);
+		}
+		eventsToProcess = [];
+	}
+
+	function handleEvent(eventInfo) {
+		var event = eventInfo.event;
+		var track = eventInfo.track;
+		var delta = eventInfo.ticksToEvent;
+		//DEBUG
+		//console.log("Delta = ", delta);
+
 		switch (event.type) {
 			case 'meta':
 				switch (event.subtype) {
@@ -161,7 +191,8 @@ function Replayer(midiFile, synth, soundBuffers) {
 				switch (event.subtype) {
 					case 'noteOn':
 						if(trackMute[track]) event.velocity = 0;
-						channels[event.channel].noteOn(event.noteNumber, event.velocity);
+						//channels[event.channel].noteOn(event.noteNumber, event.velocity);
+
                         var channel = 0;
                         var instrument = 0;
                         var noteNum = nextEventInfo.event.noteNumber;
@@ -187,7 +218,8 @@ function Replayer(midiFile, synth, soundBuffers) {
 
 						break;
 					case 'noteOff':
-						channels[event.channel].noteOff(event.noteNumber, event.velocity);
+						//channels[event.channel].noteOff(event.noteNumber, event.velocity);
+
                         var channel = 0;
                         var instrument = 0;
                         var noteNum = nextEventInfo.event.noteNumber;
@@ -215,6 +247,7 @@ function Replayer(midiFile, synth, soundBuffers) {
                                 delete sources[channelId + '' + noteNum.toString()];
                             }
                         }
+
 						break;
 					case 'programChange':
 						//console.log('program change to ' + event.programNumber);
@@ -239,6 +272,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 		'replay': replay,
 		'generate': generate,
 		'setMuteTrack': setMuteTrack,
+		'processEvents': processEvents,
 		'finished': false
 	}
 	return self;

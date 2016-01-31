@@ -43,33 +43,17 @@ function AudioPlayer(generator, audioBuffers, opts) {
 		
 		var channelCount = 2;
 		var bufferSize = 4096*4; // Higher for less gitches, lower for less latency
-		
-		var node = context.createScriptProcessor(bufferSize, 0, channelCount);
-		
-		node.onaudioprocess = function(e) { process(e) };
+		var eventCheckTime = 10;
 
-		function process(e) {
-			if (generator.finished) {
-				node.disconnect();
-				return;
+		var start = Date.now(), now;
+		var processTimer = setInterval(function() {
+			now = Date.now();
+			generator.processEvents(now-start, eventCheckTime);
+			if(generator.finished) {
+				console.log("All events processed");
+				clearInterval(processTimer);
 			}
-
-			var dataLeft = e.outputBuffer.getChannelData(0);
-			var dataRight = e.outputBuffer.getChannelData(1);
-
-			var generate = generator.generate(bufferSize, context);
-
-
-			/*
-			for (var i = 0; i < bufferSize; ++i) {
-				dataLeft[i] = generate[i*2];
-				dataRight[i] = generate[i*2+1];
-			}
-			*/
-		}
-		
-		// start
-		node.connect(context.destination);
+		}, eventCheckTime);
 		
 		return {
 			'stop': function() {
