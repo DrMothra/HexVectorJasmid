@@ -40,9 +40,7 @@ function AudioPlayer(generator, midiData, opts) {
 		// Uses Webkit Web Audio API if available
 		var context = new webkitAudio();
 		sampleRate = context.sampleRate;
-		
-		var channelCount = 2;
-		var bufferSize = 4096*4; // Higher for less gitches, lower for less latency
+
 		var eventCheckTime = 25;
 
 		var start = Date.now(), now;
@@ -50,7 +48,8 @@ function AudioPlayer(generator, midiData, opts) {
 			now = Date.now();
 			if(generator.processAudioEvents(now-start, eventCheckTime, midiData)) {
 				console.log("All events processed");
-				clearInterval(processTimer);
+				generator.reset();
+				start = now;
 			}
 
 		}, eventCheckTime);

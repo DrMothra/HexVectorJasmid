@@ -25,6 +25,9 @@ var midiManager = ( function() {
                 //Load in audio files
                 //DEBUG
                 console.log("About to load audio files");
+                $('#loaded').html("Loaded");
+                midiManager.play("audio/MIDIMaster.mid");
+                /*
                 loadAudioFiles(_this.audioContext, _this.keyToNote, _this.instruments[0], _this.audioBuffers, function() {
                     //DEBUG
                     console.log("All audio files loaded");
@@ -33,6 +36,7 @@ var midiManager = ( function() {
                     //this.replayer.muteAllTracks();
                     midiManager.play("audio/MIDIMaster.mid");
                 });
+                */
             });
         },
 
@@ -87,6 +91,8 @@ function setupNotes(notes) {
 }
 
 $(document).ready(function() {
+
+    var lineToTrack = [undefined, undefined, undefined, undefined, undefined, undefined];
 
     midiManager.init();
 
@@ -225,6 +231,9 @@ $(document).ready(function() {
             line.rotation = shapeCentres[centrePoint].rot;
             line.scale.y = shapeCentres[centrePoint].scale;
             midiManager.muteTrack(centrePoint+1, false);
+            lineToTrack[lineNumber] = centrePoint + 1;
+            //DEBUG
+            //console.log("Line ", lineNumber, " = track ", centrePoint+1);
         }
     }
 
@@ -235,7 +244,12 @@ $(document).ready(function() {
         line.y = game.world.height - originYOffset;
         line.scale.y = 0.25;
         line.rotation = 0;
-        midiManager.muteTrack(lineNumber+1, true);
+        if(lineToTrack[lineNumber] !== undefined) {
+            midiManager.muteTrack(lineToTrack[lineNumber], true);
+            //DEBUG
+            //console.log("Track ", lineToTrack[lineNumber], " muted");
+        }
+        lineToTrack[lineNumber] = undefined;
     }
 
     function checkOverlap(sprite) {

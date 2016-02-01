@@ -8,7 +8,7 @@ var clone = function (o) {
 
 function Replayer(midiFile, synth, soundBuffers) {
 	var trackStates = [];
-	var beatsPerMinute = 120;
+	var beatsPerMinute = 68;
 	var ticksPerBeat = midiFile.header.ticksPerBeat;
 	var channelCount = 16;
 	var trackMute = [];
@@ -20,6 +20,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 	var playbackTime = 0;
 	var currentEvent = 0;
 	var masterVolume = 127;
+	var counter = 0;
 
 	for (var i = 0; i < midiFile.tracks.length; i++) {
 		trackMute.push(true);
@@ -136,16 +137,24 @@ function Replayer(midiFile, synth, soundBuffers) {
 		var keepProcessing = true;
 		var delay, event, time, obj;
 		var dataLength = data.length;
+		//DEBUG
+		//if(counter === 0) {
+		//	console.log("Current time = ", currentTime);
+		//	counter = 1;
+		//}
+
 		while(keepProcessing) {
 			if(currentEvent >= dataLength) break;
-			obj = data[currentEvent];
-			//DEBUG
+			obj = data[currentEvent]; //DEBUG
 			//console.log("Current event =", currentEvent);
 			event = obj[0];
 			time = obj[1];
 			playbackTime += time;
+			//DEBUG
+			//console.log("Playback = ", playbackTime);
 			++currentEvent;
 			if(playbackTime < currentTime) continue;
+			if(event.event.type === 'meta') continue;
 			delay = playbackTime - currentTime;
 			if(delay < 0) delay = 0;
 			if(playbackTime >= currentTime && playbackTime <= (currentTime + nextTimeInterval)) {
@@ -162,6 +171,12 @@ function Replayer(midiFile, synth, soundBuffers) {
 		}
 		eventsToProcess = [];
 		return (currentEvent >= dataLength);
+	}
+
+	function reset() {
+		currentEvent = 0;
+		playbackTime = 0;
+		counter = 0;
 	}
 
 	function handleEvent(eventInfo) {
@@ -186,7 +201,10 @@ function Replayer(midiFile, synth, soundBuffers) {
 
                         noteNum = event.noteNumber;
 						//DEBUG
-						//console.log("On = ", noteNum);
+						//if(++counter < 30) {
+						//	console.log("On = ", noteNum, " delay = ", delay);
+						//}
+
                         if(noteNum === undefined) {
                             noteNum = 21;
                         }
@@ -214,7 +232,10 @@ function Replayer(midiFile, synth, soundBuffers) {
 
                         noteNum = event.noteNumber;
 						//DEBUG
-						//console.log("Off = ", noteNum);
+						//DEBUG
+						//if(++counter < 30) {
+						//	console.log("Off = ", noteNum, " delay = ", delay);
+						//}
 						noteId = noteNum.toString();
                         bufferId = instrument + '' + noteId;
                         buffer = audioBuffers[bufferId];
@@ -237,7 +258,7 @@ function Replayer(midiFile, synth, soundBuffers) {
                                 }
 
                                 ///
-                                delete sources[channelId + '' + noteId];
+                                //delete sources[channelId + '' + noteId];
                             }
                         }
 
@@ -275,6 +296,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 		'setMuteTrack': setMuteTrack,
         'muteAllTracks': muteAllTracks,
 		'processEvents': processEvents,
+		'reset': reset,
 		"getData": getData,
 		'processAudioEvents': processAudioEvents
 	};
