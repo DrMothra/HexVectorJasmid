@@ -1,3 +1,11 @@
+var clone = function (o) {
+	if (typeof o != 'object') return (o);
+	if (o == null) return (o);
+	var ret = (typeof o.length == 'number') ? [] : {};
+	for (var key in o) ret[key] = clone(o[key]);
+	return ret;
+};
+
 function Replayer(midiFile, synth, soundBuffers) {
 	var trackStates = [];
 	var beatsPerMinute = 120;
@@ -9,7 +17,9 @@ function Replayer(midiFile, synth, soundBuffers) {
     var sources = {};
 	var webkitAudio = window.AudioContext || window.webkitAudioContext;
 	var context = new webkitAudio();
-	
+	var playbackTime = 0;
+	var currentEvent = 0;
+
 	for (var i = 0; i < midiFile.tracks.length; i++) {
 		trackMute.push(false);
 		trackStates[i] = {
@@ -20,41 +30,6 @@ function Replayer(midiFile, synth, soundBuffers) {
 					null
 			)
 		};
-	}
-	
-	function Channel() {
-		
-		var generatorsByNote = {};
-		var currentProgram = PianoProgram;
-		
-		function noteOn(note, velocity) {
-			if (generatorsByNote[note] && !generatorsByNote[note].released) {
-				/* playing same note before releasing the last one. BOO */
-				generatorsByNote[note].noteOff(); /* TODO: check whether we ought to be passing a velocity in */
-			}
-			generator = currentProgram.createNote(note, velocity);
-			synth.addGenerator(generator);
-			generatorsByNote[note] = generator;
-		}
-		function noteOff(note, velocity) {
-			if (generatorsByNote[note] && !generatorsByNote[note].released) {
-				generatorsByNote[note].noteOff(velocity);
-			}
-		}
-		function setProgram(programNumber) {
-			currentProgram = PROGRAMS[programNumber] || PianoProgram;
-		}
-		
-		return {
-			'noteOn': noteOn,
-			'noteOff': noteOff,
-			'setProgram': setProgram
-		}
-	}
-	
-	var channels = [];
-	for (var i = 0; i < channelCount; i++) {
-		channels[i] = Channel();
 	}
 	
 	var nextEventInfo;
@@ -90,95 +65,161 @@ function Replayer(midiFile, synth, soundBuffers) {
 					trackStates[i].ticksToNextEvent -= ticksToNextEvent
 				}
 			}
-			nextEventInfo = {
+			return {
 				'ticksToEvent': ticksToNextEvent,
 				'event': nextEvent,
 				'track': nextEventTrack
 			}
-			var beatsToNextEvent = ticksToNextEvent / ticksPerBeat;
-			var secondsToNextEvent = beatsToNextEvent / (beatsPerMinute / 60);
-			samplesToNextEvent += secondsToNextEvent * synth.sampleRate;
+
 		} else {
-			nextEventInfo = null;
-			samplesToNextEvent = null;
-			self.finished = true;
+			return null;
 		}
-	}
-	
-	getNextEvent();
-	
-	function generate(samples) {
-		var data = new Array(samples*2);
-        var audioBuffer;
-		var samplesRemaining = samples;
-		var dataOffset = 0;
-		
-		while (true) {
-			if (samplesToNextEvent != null && samplesToNextEvent <= samplesRemaining) {
-				/* generate samplesToNextEvent samples, process event and repeat */
-				var samplesToGenerate = Math.ceil(samplesToNextEvent);
-				if (samplesToGenerate > 0) {
-					synth.generateIntoBuffer(samplesToGenerate, data, dataOffset);
-					dataOffset += samplesToGenerate * 2;
-					samplesRemaining -= samplesToGenerate;
-					samplesToNextEvent -= samplesToGenerate;
-				}
-				
-				handleEvent();
-				getNextEvent();
-			} else {
-				/* generate samples to end of buffer */
-				if (samplesRemaining > 0) {
-					synth.generateIntoBuffer(samplesRemaining, data, dataOffset);
-					samplesToNextEvent -= samplesRemaining;
-				}
-                //Use soundfont data
-                /*
-                var channel = 0;
-                var instrument = 0;
-                var noteNum = nextEventInfo.event.noteNumber;
-                if(noteNum === undefined) {
-                    noteNum = 21;
-                }
-                var bufferId = instrument + '' + noteNum.toString();
-                audioBuffer = audioBuffers[bufferId];
-                */
-				break;
-			}
-		}
-		return data;
-        //return audioBuffer;
 	}
 
-	function processEvents(currentTime, nextTimeInterval) {
-		//Get and process midi events
-		//DEBUG
-		console.log("Current = ", currentTime);
-		var keepProcessing = true;
-		while(keepProcessing) {
+	var midiEvent;
+	var temporal = [];
+	//
+	function processEvents() {
+		var timeWarp = 1;
+		function processNext() {
+			///
+			var beatsToGenerate = 0;
+			var secondsToGenerate = 0;
+			if (midiEvent.ticksToEvent > 0) {
+				beatsToGenerate = midiEvent.ticksToEvent / ticksPerBeat;
+				secondsToGenerate = beatsToGenerate / (beatsPerMinute / 60);
+			}
+			///
+			var time = (secondsToGenerate * 1000 * timeWarp) || 0;
+			temporal.push([ midiEvent, time]);
+			midiEvent = getNextEvent();
+		};
+		///
+		if (midiEvent = getNextEvent()) {
+			while(midiEvent) processNext(true);
+		}
+	}
+
+	processEvents();
+
+	function checkEvents(currentTime, nextTimeInterval) {
+		while(true) {
 			getNextEvent();
-			if(nextEventInfo != null) {
-				if((currentTime + nextTimeInterval) >= nextEventInfo.ticksToEvent) {
-					eventsToProcess.push(nextEventInfo);
-				} else {
-					keepProcessing = false;
-				}
+			//DEBUG
+			var type = nextEventInfo.event.type;
+			switch(type) {
+				case 'meta':
+					console.log("Meta");
+					break;
+				case 'channel':
+					switch (nextEventInfo.event.subtype) {
+						case 'noteOn':
+							console.log("Note on = ", nextEventInfo.event.noteNumber);
+							break;
+						case 'noteOff':
+							console.log("Note off = ", nextEventInfo.event.noteNumber);
+							break;
+						default:
+							break;
+					}
+					break;
+				default:
+					break;
+			}
+		}
+	}
+
+	function processAudioEvents(currentTime, nextTimeInterval, data) {
+		var keepProcessing = true;
+		var delay, event, time, obj;
+		while(keepProcessing) {
+			obj = data[currentEvent];
+			event = obj[0];
+			time = obj[1];
+			playbackTime += time;
+			delay = playbackTime - currentTime;
+			if(delay < 0) delay = 0;
+			++currentEvent;
+			if((currentTime + nextTimeInterval) >= playbackTime) {
+				//DEBUG
+				//console.log("Ticks = ", nextEventInfo.ticksToEvent);
+				if(playbackTime === 0) continue;
+				event.delay = delay;
+				eventsToProcess.push(event);
 			} else {
+				//Don't miss latest event
+				event.delay = delay;
+				eventsToProcess.push(event);
 				keepProcessing = false;
 			}
 		}
+		for(var j=0; j<eventsToProcess.length; ++j) {
+			handleEvent(eventsToProcess[j]);
+		}
+		eventsToProcess = [];
+	}
+	/*
+	function processEvents(currentTime, nextTimeInterval) {
+		//Get and process midi events
+		//DEBUG
+		//console.log("Current = ", currentTime);
+		var keepProcessing = true;
+		var delay, type;
+		while(keepProcessing) {
+			getNextEvent();
+			//DEBUG
+			type = nextEventInfo.event.type;
+			switch(type) {
+				case 'meta':
+					console.log("Meta");
+					break;
+				case 'channel':
+					switch (nextEventInfo.subtype) {
+						case 'noteOn':
+							console.log("Note on = ", nextEventInfo.event.noteNumber);
+							break;
+						case 'noteOff':
+							console.log("Note off = ", nextEventInfo.event.noteNumber);
+							break;
+						default:
+							break;
+					}
+					break;
+				default:
+					break;
+			}
+
+			if(nextEventInfo === null) break;
+			playbackTime += nextEventInfo.ticksToEvent;
+			//DEBUG
+			//console.log("Playback = ", playbackTime);
+			delay = playbackTime - currentTime;
+			if(delay < 0) delay = 0;
+			if((currentTime + nextTimeInterval) >= playbackTime) {
+				//DEBUG
+				//console.log("Ticks = ", nextEventInfo.ticksToEvent);
+				nextEventInfo.delay = delay;
+				eventsToProcess.push(nextEventInfo);
+			} else {
+				//Don't miss latest event
+				nextEventInfo.delay = delay;
+				eventsToProcess.push(nextEventInfo);
+				keepProcessing = false;
+			}
+		}
+		//DEBUG
+		//console.log("Events = ", eventsToProcess.length);
 		for(var i=0; i<eventsToProcess.length; ++i) {
 			handleEvent(eventsToProcess[i]);
 		}
 		eventsToProcess = [];
 	}
+	*/
 
 	function handleEvent(eventInfo) {
 		var event = eventInfo.event;
 		var track = eventInfo.track;
-		var delta = eventInfo.ticksToEvent;
-		//DEBUG
-		//console.log("Delta = ", delta);
+		var delay = eventInfo.delay;
 
 		switch (event.type) {
 			case 'meta':
@@ -190,12 +231,15 @@ function Replayer(midiFile, synth, soundBuffers) {
 			case 'channel':
 				switch (event.subtype) {
 					case 'noteOn':
+
 						if(trackMute[track]) event.velocity = 0;
 						//channels[event.channel].noteOn(event.noteNumber, event.velocity);
 
                         var channel = 0;
                         var instrument = 0;
-                        var noteNum = nextEventInfo.event.noteNumber;
+                        var noteNum = event.noteNumber;
+						//DEBUG
+						console.log("On = ", noteNum);
                         if(noteNum === undefined) {
                             noteNum = 21;
                         }
@@ -212,7 +256,7 @@ function Replayer(midiFile, synth, soundBuffers) {
                         source.gainNode.gain.value = Math.min(1.0, Math.max(-1.0, gain));
                         source.connect(source.gainNode);
 
-                        source.start(0);
+                        source.start(delay);
                         var channelId = 0;
                         sources[channelId + '' + noteNum.toString()] = source;
 
@@ -221,8 +265,11 @@ function Replayer(midiFile, synth, soundBuffers) {
 						//channels[event.channel].noteOff(event.noteNumber, event.velocity);
 
                         var channel = 0;
+						var channelId = 0;
                         var instrument = 0;
-                        var noteNum = nextEventInfo.event.noteNumber;
+                        var noteNum = event.noteNumber;
+						//DEBUG
+						console.log("Off = ", noteNum);
                         var bufferId = instrument + '' + noteNum.toString();
                         var buffer = audioBuffers[bufferId];
                         if (buffer) {
@@ -232,15 +279,15 @@ function Replayer(midiFile, synth, soundBuffers) {
                                     // @Miranet: 'the values of 0.2 and 0.3 could of course be used as
                                     // a 'release' parameter for ADSR like time settings.'
                                     // add { 'metadata': { release: 0.3 } } to soundfont files
-                                    //var gain = source.gainNode.gain;
-                                    //gain.linearRampToValueAtTime(gain.value, delay);
-                                    //gain.linearRampToValueAtTime(-1.0, delay + 0.3);
+                                    var gain = source.gainNode.gain;
+                                    gain.linearRampToValueAtTime(gain.value, delay);
+                                    gain.linearRampToValueAtTime(-1.0, delay + 0.3);
                                 }
                                 ///
                                 if (source.noteOff) {
-                                    source.noteOff(0.5);
+                                    source.noteOff(delay + 0.5);
                                 } else {
-                                    source.stop(0.5);
+                                    source.stop(delay + 0.5);
                                 }
 
                                 ///
@@ -268,12 +315,15 @@ function Replayer(midiFile, synth, soundBuffers) {
 		trackMute[trackNumber] = muteStatus;
 	}
 
-	var self = {
+	function getData() {
+		return clone(temporal);
+	}
+
+	return {
 		'replay': replay,
-		'generate': generate,
 		'setMuteTrack': setMuteTrack,
 		'processEvents': processEvents,
-		'finished': false
-	}
-	return self;
+		"getData": getData,
+		'processAudioEvents': processAudioEvents
+	};
 }

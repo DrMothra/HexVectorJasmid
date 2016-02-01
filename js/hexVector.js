@@ -57,7 +57,8 @@ var midiManager = ( function() {
                 this.midiFile = MidiFile(data);
                 this.synth = Synth(this.SAMPLERATE);
                 this.replayer = Replayer(this.midiFile, this.synth, this.audioBuffers);
-                this.audio = AudioPlayer(this.replayer, this.audioBuffers);
+                var midiData = this.replayer.getData();
+                this.audio = AudioPlayer(this.replayer, this.audioBuffers, midiData);
             })
         },
 
