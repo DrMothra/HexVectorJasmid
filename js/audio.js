@@ -1,6 +1,6 @@
 var sampleRate = 44100; /* hard-coded in Flash player */
 
-function AudioPlayer(generator, audioBuffers, midiData, opts) {
+function AudioPlayer(generator, midiData, opts) {
 	if (!opts) opts = {};
 	var latency = opts.latency || 1;
 	var checkInterval = latency * 100 /* in ms */
@@ -48,11 +48,11 @@ function AudioPlayer(generator, audioBuffers, midiData, opts) {
 		var start = Date.now(), now;
 		var processTimer = setInterval(function() {
 			now = Date.now();
-			generator.processAudioEvents(now-start, eventCheckTime, midiData);
-			if(generator.finished) {
+			if(generator.processAudioEvents(now-start, eventCheckTime, midiData)) {
 				console.log("All events processed");
 				clearInterval(processTimer);
 			}
+
 		}, eventCheckTime);
 
 		return {
