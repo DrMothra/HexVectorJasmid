@@ -38,8 +38,8 @@ function AudioPlayer(generator, midiData, opts) {
 		}
 	} else if (webkitAudio) {
 		// Uses Webkit Web Audio API if available
-		var context = new webkitAudio();
-		sampleRate = context.sampleRate;
+		//var context = new webkitAudio();
+		//sampleRate = context.sampleRate;
 
 		var eventCheckTime = 25;
 

@@ -135,7 +135,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 
 	function processAudioEvents(currentTime, nextTimeInterval, data) {
 		var keepProcessing = true;
-		var delay, event, time, obj;
+		var delay, event, time, obj, delayOffset = 3;;
 		var dataLength = data.length;
 		//DEBUG
 		//if(counter === 0) {
@@ -158,7 +158,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 			delay = playbackTime - currentTime;
 			if(delay < 0) delay = 0;
 			if(playbackTime >= currentTime && playbackTime <= (currentTime + nextTimeInterval)) {
-				event.delay = delay/1000;
+				event.delay = (delay/1000) + delayOffset;
 				eventsToProcess.push(event);
 				//DEBUG
 				//console.log("Delay = ", delay, " currentTime = ", currentTime);
@@ -233,7 +233,6 @@ function Replayer(midiFile, synth, soundBuffers) {
 						break;
 					case 'noteOff':
 						//channels[event.channel].noteOff(event.noteNumber, event.velocity);
-						break;
                         noteNum = event.noteNumber;
 						//DEBUG
 						//if(++counter < 30) {
@@ -245,6 +244,10 @@ function Replayer(midiFile, synth, soundBuffers) {
                         if (buffer) {
                             source = sources[channelId + '' + noteId];
                             if (source) {
+                                delete sources[channelId + '' + noteId];
+                            }
+                        }
+                        /*
                                 if (source.gainNode) {
                                     // @Miranet: 'the values of 0.2 and 0.3 could of course be used as
                                     // a 'release' parameter for ADSR like time settings.'
@@ -264,6 +267,7 @@ function Replayer(midiFile, synth, soundBuffers) {
                                 //delete sources[channelId + '' + noteId];
                             }
                         }
+                        */
 
 						break;
 					case 'programChange':

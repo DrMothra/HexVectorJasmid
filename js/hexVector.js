@@ -39,7 +39,8 @@ var midiManager = ( function() {
         },
 
         loadRemoteFile: function(path, callback) {
-            var fetch = new XMLHttpRequest(); fetch.open('GET', path);
+            var fetch = new XMLHttpRequest();
+            fetch.open('GET', path);
             fetch.overrideMimeType("text/plain; charset=x-user-defined");
             fetch.onreadystatechange = function() {
                 if(this.readyState == 4 && this.status == 200) {
