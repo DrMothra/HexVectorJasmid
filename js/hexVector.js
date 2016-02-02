@@ -25,9 +25,7 @@ var midiManager = ( function() {
                 //Load in audio files
                 //DEBUG
                 console.log("About to load audio files");
-                $('#loaded').html("Loaded");
-                midiManager.play("audio/MIDIMaster.mid");
-                /*
+
                 loadAudioFiles(_this.audioContext, _this.keyToNote, _this.instruments[0], _this.audioBuffers, function() {
                     //DEBUG
                     console.log("All audio files loaded");
@@ -36,7 +34,7 @@ var midiManager = ( function() {
                     //this.replayer.muteAllTracks();
                     midiManager.play("audio/MIDIMaster.mid");
                 });
-                */
+
             });
         },
 

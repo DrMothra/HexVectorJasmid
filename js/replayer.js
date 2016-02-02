@@ -145,7 +145,8 @@ function Replayer(midiFile, synth, soundBuffers) {
 
 		while(keepProcessing) {
 			if(currentEvent >= dataLength) break;
-			obj = data[currentEvent]; //DEBUG
+			obj = data[currentEvent];
+			//DEBUG
 			//console.log("Current event =", currentEvent);
 			event = obj[0];
 			time = obj[1];
@@ -153,13 +154,14 @@ function Replayer(midiFile, synth, soundBuffers) {
 			//DEBUG
 			//console.log("Playback = ", playbackTime);
 			++currentEvent;
-			if(playbackTime < currentTime) continue;
-			if(event.event.type === 'meta') continue;
+			if(playbackTime < currentTime || event.event.type === 'meta') continue;
 			delay = playbackTime - currentTime;
 			if(delay < 0) delay = 0;
 			if(playbackTime >= currentTime && playbackTime <= (currentTime + nextTimeInterval)) {
 				event.delay = delay/1000;
 				eventsToProcess.push(event);
+				//DEBUG
+				//console.log("Delay = ", delay, " currentTime = ", currentTime);
 			} else {
 				--currentEvent;
 				playbackTime -= time;
@@ -183,6 +185,8 @@ function Replayer(midiFile, synth, soundBuffers) {
 		var event = eventInfo.event;
 		var track = eventInfo.track;
 		var delay = eventInfo.delay;
+		//DEBUG
+		//console.log("Delay = ", delay);
 		var channel = 0, channelId = 0, instrument = 0;
 		var noteNum, noteId, bufferId, buffer, source, gain;
 
@@ -229,9 +233,8 @@ function Replayer(midiFile, synth, soundBuffers) {
 						break;
 					case 'noteOff':
 						//channels[event.channel].noteOff(event.noteNumber, event.velocity);
-
+						break;
                         noteNum = event.noteNumber;
-						//DEBUG
 						//DEBUG
 						//if(++counter < 30) {
 						//	console.log("Off = ", noteNum, " delay = ", delay);
