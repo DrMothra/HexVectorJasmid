@@ -29,7 +29,6 @@ var midiManager = ( function() {
                 loadAudioFiles(_this.audioContext, _this.keyToNote, _this.instruments[0], _this.audioBuffers, function() {
                     //DEBUG
                     console.log("All audio files loaded");
-                    $('#loaded').html("Loaded");
                     //Start playing
                     //this.replayer.muteAllTracks();
                     midiManager.play("audio/MIDIMaster.mid");
@@ -139,7 +138,7 @@ $(document).ready(function() {
     var numNotes = 6;
     var indent = 400;
     var noteLines = [];
-    var fx = [];
+    var trackOccupied = [];
 
     function create() {
 
@@ -179,11 +178,9 @@ $(document).ready(function() {
             noteLines[i].inputEnabled = true;
             noteLines[i].input.enableDrag();
             noteLines[i].events.onDragStop.add(onDragStop, this);
+            trackOccupied[i] = false;
         }
 
-        for(i=0; i<notes.length; ++i) {
-            fx.push(game.add.audio(notes[i]));
-        }
 
         //  Being mp3 files these take time to decode, so we can't play them instantly
         //  Using setDecodedCallback we can be notified when they're ALL ready for use.
@@ -225,14 +222,36 @@ $(document).ready(function() {
         //console.log("Centre point = ", centrePoint);
         var line = noteLines[lineNumber];
         if(centrePoint != undefined) {
+            //Don't snap to existing line
+            var trackNumber = lineToTrack[lineNumber];
+            if(trackOccupied[centrePoint]) {
+                if(trackNumber !== undefined) {
+                    centrePoint = trackNumber - 1;
+                    line.x = shapeCentres[centrePoint].x;
+                    line.y = shapeCentres[centrePoint].y;
+                    line.rotation = shapeCentres[centrePoint].rot;
+                    line.scale.y = shapeCentres[centrePoint].scale;
+                } else {
+                    resetLine(pointer, lineNumber);
+                }
+                return;
+            }
+
+            //Did line come from existing track
+            if(trackNumber !== undefined) {
+                midiManager.muteTrack(trackNumber, true);
+                trackOccupied[trackNumber-1] = false;
+            }
             line.x = shapeCentres[centrePoint].x;
             line.y = shapeCentres[centrePoint].y;
             line.rotation = shapeCentres[centrePoint].rot;
             line.scale.y = shapeCentres[centrePoint].scale;
             midiManager.muteTrack(centrePoint+1, false);
+
             lineToTrack[lineNumber] = centrePoint + 1;
+            trackOccupied[centrePoint] = true;
             //DEBUG
-            //console.log("Line ", lineNumber, " = track ", centrePoint+1);
+            console.log("Line ", lineNumber, " = track ", centrePoint+1);
         }
     }
 
@@ -243,8 +262,10 @@ $(document).ready(function() {
         line.y = game.world.height - originYOffset;
         line.scale.y = 0.25;
         line.rotation = 0;
-        if(lineToTrack[lineNumber] !== undefined) {
-            midiManager.muteTrack(lineToTrack[lineNumber], true);
+        var trackNumber = lineToTrack[lineNumber];
+        if(trackNumber !== undefined) {
+            midiManager.muteTrack(trackNumber, true);
+            trackOccupied[trackNumber-1] = false;
             //DEBUG
             //console.log("Track ", lineToTrack[lineNumber], " muted");
         }

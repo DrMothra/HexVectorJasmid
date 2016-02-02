@@ -33,7 +33,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 			)
 		};
 	}
-	
+
 	var nextEventInfo;
 	var samplesToNextEvent = 0;
 	
@@ -201,13 +201,17 @@ function Replayer(midiFile, synth, soundBuffers) {
 				switch (event.subtype) {
 					case 'noteOn':
 
-						if(trackMute[track]) event.velocity = 0;
+                        var velocity = event.velocity;
+
+						if(trackMute[track]) {
+                            velocity = 0;
+                            //DEBUG
+                            //console.log("Track ", track, " muted");
+                        }
 
                         noteNum = event.noteNumber;
 						//DEBUG
-						//if(++counter < 30) {
-						//	console.log("On = ", noteNum, " delay = ", delay);
-						//}
+                        //console.log("On = ", noteNum, " delay = ", delay, " velocity = ", event.velocity);
 
                         if(noteNum === undefined) {
                             noteNum = 21;
@@ -218,7 +222,7 @@ function Replayer(midiFile, synth, soundBuffers) {
                         source = context.createBufferSource();
                         source.buffer = buffer;
 
-                        gain = (event.velocity / 127) * (masterVolume / 127) * 2 - 1;
+                        gain = (velocity / 127) * (masterVolume / 127) * 2 - 1;
                         source.connect(context.destination);
                         source.playbackRate.value = 1; // pitch shift
                         source.gainNode = context.createGain(); // gain
