@@ -130,9 +130,9 @@ var oscillator = (function() {
     var notes = [];
     var numNotes = 6;
     var noteAttributes = [];
-    var osc1Freqs = [65, 87, 87, 87, 87, 87];
+    var osc1Freqs = [65, 87, 116.5, 155, 207.5, 247];
     var osc1Detunes = [0, 0, 0, 0, 0, 0];
-    var osc2Freqs = [130, 174, 174, 174, 174, 174];
+    var osc2Freqs = [130, 174, 233, 310, 415, 494];
     var osc2Detunes = [-25, -25, -25, -25, -25, -25];
     var gain1Gain = 0.25, gain2Gain = 0.25;
     var modFilterGain;
@@ -240,7 +240,7 @@ $('#document').ready(function() {
     var numNotes = 6;
     var indent = 400;
     var noteLines = [];
-    var fx = [];
+    var trackOccupied = [];
 
     function create() {
 
@@ -322,15 +322,36 @@ $('#document').ready(function() {
         //console.log("Centre point = ", centrePoint);
         var line = noteLines[lineNumber];
         if(centrePoint != undefined) {
+            //Don't snap to existing line
+            var trackNumber = lineToTrack[lineNumber];
+            if(trackOccupied[centrePoint]) {
+                if(trackNumber !== undefined) {
+                    line.x = shapeCentres[trackNumber].x;
+                    line.y = shapeCentres[trackNumber].y;
+                    line.rotation = shapeCentres[trackNumber].rot;
+                    line.scale.y = shapeCentres[trackNumber].scale;
+                } else {
+                    resetLine(pointer, lineNumber);
+                }
+                return;
+            }
+
+            //Did line come from existing track
+            if(trackNumber !== undefined) {
+                trackOccupied[trackNumber] = false;
+                oscillator.stop(trackNumber);
+            }
+
             line.x = shapeCentres[centrePoint].x;
             line.y = shapeCentres[centrePoint].y;
             line.rotation = shapeCentres[centrePoint].rot;
             line.scale.y = shapeCentres[centrePoint].scale;
             lineToTrack[lineNumber] = centrePoint;
             oscillator.play(centrePoint);
+            trackOccupied[centrePoint] = true;
+
             //DEBUG
-            //console.log("Playing");
-            console.log("Line ", lineNumber, " = track ", centrePoint);
+            console.log("Line ", lineNumber, " = centre ", centrePoint);
         }
     }
 
@@ -341,10 +362,12 @@ $('#document').ready(function() {
         line.y = game.world.height - originYOffset;
         line.scale.y = 0.25;
         line.rotation = 0;
-        if(lineToTrack[lineNumber] !== undefined) {
+        var trackNumber = lineToTrack[lineNumber];
+        if(trackNumber !== undefined) {
             oscillator.stop(lineToTrack[lineNumber]);
+            trackOccupied[trackNumber] = false;
             //DEBUG
-            console.log("Track ", lineToTrack[lineNumber], " muted");
+            console.log("Centre ", lineToTrack[lineNumber], " clear");
         }
 
         //console.log("Stopped");
