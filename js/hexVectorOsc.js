@@ -198,7 +198,7 @@ $('#document').ready(function() {
     oscillator.init();
 
     //Graphics
-    var game = new Phaser.Game(1280, 640, Phaser.AUTO, '', { preload: preload, create: create });
+    var game = new Phaser.Game(1024, 1360, Phaser.AUTO, '', { preload: preload, create: create });
     var player;
     var lineSpacing = 64;
     function preload() {
@@ -217,28 +217,28 @@ $('#document').ready(function() {
         {x: 250, y: 110, width: 150, height: 150}
     ];
     var shapeCentres = [
-        {x: 600, y: 95, rot: 1.1, scale: 0.225},
-        {x: 705, y: 145, rot: -0.63, scale: 0.375},
-        {x: 655, y: 270, rot: 1.125, scale: 0.465},
-        {x: 550, y: 220, rot: 0, scale: 0.4},
-        {x: 655, y: 170, rot: -1.125, scale: 0.475},
-        {x: 600, y: 195, rot: 0.375, scale: 0.55}
+        {x: 400, y: 175, rot: 1.225, scale: 0.425},
+        {x: 562.5, y: 257.5, rot: -0.5, scale: 0.53},
+        {x: 462.5, y: 437.5, rot: 1.2, scale: 0.7},
+        {x: 300, y: 355, rot: 0, scale: 0.575},
+        {x: 462.5, y: 292.5, rot: -1.1, scale: 0.725},
+        {x: 400, y: 320, rot: 0.5, scale: 0.85}
     ];
     var lineWidth = 3;
     var lineColour = 0x868686;
-    var startX=550, startY=120;
-    var originYOffset = 100;
+    var startX=300, startY=210;
+    var originYOffset = 400;
     var circleSize = 10;
     var pyramidLines = [
-        {x: 650, y: 70},
-        {x: 760, y: 220},
-        {x: 550, y: 320},
-        {x: 550, y: 120},
-        {x: 760, y: 220}
+        {x: 500, y: 140},
+        {x: 625, y: 375},
+        {x: 300, y: 500},
+        {x: 300, y: 210},
+        {x: 625, y: 375}
     ];
 
     var numNotes = 6;
-    var indent = 400;
+    var indent = 225;
     var noteLines = [];
     var trackOccupied = [];
 
@@ -275,7 +275,7 @@ $('#document').ready(function() {
             noteLines[i].lineNumber = i;
             noteLines[i].anchor.x = 0.5;
             noteLines[i].anchor.y = 0.5;
-            noteLines[i].scale.setTo(0.25, 0.25);
+            noteLines[i].scale.setTo(0.25, 0.35);
             //  Enable input and allow for dragging
             noteLines[i].inputEnabled = true;
             noteLines[i].input.enableDrag();
@@ -360,7 +360,7 @@ $('#document').ready(function() {
 
         line.x = (lineSpacing * (lineNumber+1)) + indent;
         line.y = game.world.height - originYOffset;
-        line.scale.y = 0.25;
+        line.scale.y = 0.35;
         line.rotation = 0;
         var trackNumber = lineToTrack[lineNumber];
         if(trackNumber !== undefined) {

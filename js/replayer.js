@@ -135,7 +135,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 
 	function processAudioEvents(currentTime, nextTimeInterval, data) {
 		var keepProcessing = true;
-		var delay, event, time, obj, delayOffset = 3;;
+		var delay, event, time, obj, delayOffset = 1;
 		var dataLength = data.length;
 		//DEBUG
 		//if(counter === 0) {
