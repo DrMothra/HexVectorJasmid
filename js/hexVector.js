@@ -6,7 +6,8 @@ var MidiManager = function() {
     this.midiFile = null;
     this.SAMPLERATE = 44100;
     this.soundFontURL = "./soundfont/";
-    this.instruments = ['acoustic_grand_piano', 'synth_drum'];
+    this.instruments = ['acoustic_grand_piano', 'synth_drum', 'electric_grand_piano', 'lead_2_sawtooth', 'marimba',
+                            'pad_3_polysynth', 'string_ensemble_1', 'synth_strings_1'];
     this.audioContext = null;
     this.audioBuffers = {};
     this.keyToNote = {};
@@ -90,11 +91,17 @@ MidiManager.prototype.play = function(midiFilename) {
     //Play the file
     var _this = this;
     this.loadRemoteFile(midiFilename, function(data) {
+        $('#loadIndicator').html("Loaded");
         this.midiFile = MidiFile(data);
         this.synth = Synth(this.SAMPLERATE);
         _this.replayer = Replayer(this.midiFile, this.synth, _this.audioBuffers);
         var midiData = _this.replayer.getData();
-        _this.replayer.setTrackMapping(1, 1);
+        _this.replayer.setTrackMapping(1, 2);
+        _this.replayer.setTrackMapping(2, 3);
+        _this.replayer.setTrackMapping(3, 4);
+        _this.replayer.setTrackMapping(4, 5);
+        _this.replayer.setTrackMapping(5, 6);
+        _this.replayer.setTrackMapping(6, 7);
         this.audio = AudioPlayer(_this.replayer, midiData);
     })
 };

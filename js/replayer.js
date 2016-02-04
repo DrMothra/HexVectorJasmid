@@ -248,6 +248,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 						//if(++counter < 30) {
 						//	console.log("Off = ", noteNum, " delay = ", delay);
 						//}
+						/*
 						noteId = noteNum.toString();
                         bufferId = instrument + '' + noteId;
                         buffer = audioBuffers[bufferId];
@@ -257,7 +258,6 @@ function Replayer(midiFile, synth, soundBuffers) {
                                 delete sources[channelId + '' + noteId];
                             }
                         }
-                        /*
                                 if (source.gainNode) {
                                     // @Miranet: 'the values of 0.2 and 0.3 could of course be used as
                                     // a 'release' parameter for ADSR like time settings.'
