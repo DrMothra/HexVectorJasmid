@@ -13,6 +13,10 @@ var MidiManager = function() {
     this.keyToNote = {};
 };
 
+MidiManager.prototype.getInstruments = function() {
+    return this.instruments;
+};
+
 MidiManager.prototype.init = function() {
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
     this.setupNotes();
@@ -96,12 +100,6 @@ MidiManager.prototype.play = function(midiFilename) {
         this.synth = Synth(this.SAMPLERATE);
         _this.replayer = Replayer(this.midiFile, this.synth, _this.audioBuffers);
         var midiData = _this.replayer.getData();
-        _this.replayer.setTrackMapping(1, 2);
-        _this.replayer.setTrackMapping(2, 3);
-        _this.replayer.setTrackMapping(3, 4);
-        _this.replayer.setTrackMapping(4, 5);
-        _this.replayer.setTrackMapping(5, 6);
-        _this.replayer.setTrackMapping(6, 7);
         this.audio = AudioPlayer(_this.replayer, midiData);
     })
 };
@@ -118,12 +116,43 @@ MidiManager.prototype.setTrackMapping = function(track, instrument) {
     this.replayer.setTrackMapping(track, instrument);
 };
 
+MidiManager.prototype.setTrackMappingId = function(track, instrumentId) {
+    //Get instrument value from list
+    var instrument = 0;
+    for(var i=0;  i<this.instruments.length; ++i) {
+        if(this.instruments[i] === instrumentId) {
+            instrument = i;
+            break;
+        }
+    }
+    this.replayer.setTrackMapping(track, instrument);
+};
+
 $(document).ready(function() {
 
     var lineToTrack = [undefined, undefined, undefined, undefined, undefined, undefined];
 
     var manager = new MidiManager();
     manager.init();
+
+    var numTracks = 6;
+    var options = manager.getInstruments();
+    var sel;
+    for(var track=1; track<=numTracks; ++track) {
+        sel = document.getElementById('selectTrack'+track);
+        var option;
+        for(var i=0; i<options.length; ++i) {
+            option = document.createElement('option');
+            option.innerHTML = options[i];
+            option.value = options[i];
+            sel.appendChild(option);
+        }
+    }
+
+    $('select[id^="selectTrack"]').on('change', function() {
+        var track = this.id.charAt(this.id.length-1);
+        manager.setTrackMappingId(track, this.value);
+    });
 
     //Graphics
     var game = new Phaser.Game(1024, 1360, Phaser.AUTO, '', { preload: preload, create: create });
