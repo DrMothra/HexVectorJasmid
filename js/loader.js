@@ -30,11 +30,10 @@ function loadRequest(soundfontpath, instrument, onLoaded) {
     xhr.send();
 }
 
-function loadAudioFiles(context, notes, instrument, audioBuffers, onLoad) {
+function loadAudioFiles(context, notes, instrument, instrumentId, audioBuffers, onLoad) {
     //Load in audio file for each note
     var urls = [];
     var bufferPending = {};
-    var instrumentId = 0;
     var key;
 
     for (key in notes) urls.push(key);

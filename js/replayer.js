@@ -12,6 +12,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 	var ticksPerBeat = midiFile.header.ticksPerBeat;
 	var channelCount = 16;
 	var trackMute = [];
+	var trackToInstrument = [];
 	var eventsToProcess = [];
     var audioBuffers = soundBuffers;
     var sources = {};
@@ -24,6 +25,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 
 	for (var i = 0; i < midiFile.tracks.length; i++) {
 		trackMute.push(true);
+		trackToInstrument.push(0);
 		trackStates[i] = {
 			'nextEventIndex': 0,
 			'ticksToNextEvent': (
@@ -187,7 +189,8 @@ function Replayer(midiFile, synth, soundBuffers) {
 		var delay = eventInfo.delay;
 		//DEBUG
 		//console.log("Delay = ", delay);
-		var channel = 0, channelId = 0, instrument = 0;
+
+		var channel = 0, channelId = 0;
 		var noteNum, noteId, bufferId, buffer, source, gain;
 
 		switch (event.type) {
@@ -198,6 +201,9 @@ function Replayer(midiFile, synth, soundBuffers) {
 				}
 				break;
 			case 'channel':
+					var instrument = trackToInstrument[track];
+					if(instrument === undefined) instrument = 0;
+
 				switch (event.subtype) {
 					case 'noteOn':
 
@@ -298,6 +304,15 @@ function Replayer(midiFile, synth, soundBuffers) {
         }
     }
 
+	function setTrackMapping(track, instrument) {
+		if(track > trackToInstrument.length) {
+			//DEBUG
+			console.log("Track too big!");
+			return;
+		}
+		trackToInstrument[track] = instrument;
+	}
+
 	function getData() {
 		return clone(temporal);
 	}
@@ -307,6 +322,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 		'setMuteTrack': setMuteTrack,
         'muteAllTracks': muteAllTracks,
 		'processEvents': processEvents,
+		'setTrackMapping': setTrackMapping,
 		'reset': reset,
 		"getData": getData,
 		'processAudioEvents': processAudioEvents

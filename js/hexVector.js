@@ -1,98 +1,122 @@
 /**
  * Created by DrTone on 29/01/2016.
  */
-
-var midiManager = ( function() {
-    var _this = this;
+var MidiManager = function() {
     this.replayer = null;
     this.midiFile = null;
-    this.synth = null;
-    this.audio = null;
     this.SAMPLERATE = 44100;
-    this.midiFilename = '';
     this.soundFontURL = "./soundfont/";
-    this.instruments = ['acoustic_grand_piano'];
-    this.keyToNote = {};
+    this.instruments = ['acoustic_grand_piano', 'synth_drum'];
     this.audioContext = null;
     this.audioBuffers = {};
+    this.keyToNote = {};
+};
 
-    return {
-        init: function() {
-            _this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            setupNotes(_this.keyToNote);
-            //Load resources
-            loadRequest(_this.soundFontURL, _this.instruments[0], function() {
-                //Load in audio files
-                //DEBUG
-                console.log("About to load audio files");
+MidiManager.prototype.init = function() {
+    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    this.setupNotes();
+    var _this = this;
+    this.loadSoundfonts(function() {
+        _this.loadAudiofiles(function() {
+            _this.play("audio/MIDIMaster.mid");
+        })
+    })
+};
 
-                loadAudioFiles(_this.audioContext, _this.keyToNote, _this.instruments[0], _this.audioBuffers, function() {
-                    //DEBUG
-                    console.log("All audio files loaded");
-                    //Start playing
-                    //this.replayer.muteAllTracks();
-                    midiManager.play("audio/MIDIMaster.mid");
-                });
-
-            });
-        },
-
-        loadRemoteFile: function(path, callback) {
-            var fetch = new XMLHttpRequest();
-            fetch.open('GET', path);
-            fetch.overrideMimeType("text/plain; charset=x-user-defined");
-            fetch.onreadystatechange = function() {
-                if(this.readyState == 4 && this.status == 200) {
-                    /* munge response into a binary string */
-                    var t = this.responseText || "" ;
-                    var ff = [];
-                    var mx = t.length;
-                    var scc= String.fromCharCode;
-                    for (var z = 0; z < mx; z++) {
-                        ff[z] = scc(t.charCodeAt(z) & 255);
-                    }
-                    callback(ff.join(""));
-                }
-            };
-            fetch.send();
-        },
-
-        play: function(file) {
-            this.loadRemoteFile(file, function(data) {
-                this.midiFile = MidiFile(data);
-                this.synth = Synth(this.SAMPLERATE);
-                this.replayer = Replayer(this.midiFile, this.synth, this.audioBuffers);
-                var midiData = this.replayer.getData();
-                this.audio = AudioPlayer(this.replayer, midiData);
-            })
-        },
-
-        muteTrack: function(trackNumber, muteStatus) {
-            _this.replayer.setMuteTrack(trackNumber, muteStatus);
-        },
-
-        muteAllTracks: function() {
-            _this.replayer.muteAllTracks();
-        }
-    }
-})();
-
-function setupNotes(notes) {
+MidiManager.prototype.setupNotes = function() {
     var A0 = 0x15; // first note
     var C8 = 0x6C; // last note
     var number2key = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
     for (var n = A0; n <= C8; n++) {
         var octave = (n - 12) / 12 >> 0;
         var name = number2key[n % 12] + octave;
-        notes[name] = n;
+        this.keyToNote[name] = n;
     }
-}
+};
+
+MidiManager.prototype.loadSoundfonts = function(onLoaded) {
+    var numRequests = this.instruments.length;
+    var filesLoaded = 0;
+    for(var i=0; i<numRequests; ++i) {
+        loadRequest(this.soundFontURL, this.instruments[i], function() {
+            //DEBUG
+            console.log("File loaded");
+            if(++filesLoaded === numRequests) {
+                //DEBUG
+                console.log("All files loaded");
+                onLoaded();
+            }
+        })
+    }
+};
+
+MidiManager.prototype.loadAudiofiles = function(onLoaded) {
+    var numRequests = this.instruments.length;
+    var filesLoaded = 0;
+    for(var i=0; i<this.instruments.length; ++i) {
+        loadAudioFiles(this.audioContext, this.keyToNote, this.instruments[i], i, this.audioBuffers, function() {
+            //DEBUG
+            console.log("File loaded");
+            if(++filesLoaded === numRequests) {
+                //DEBUG
+                console.log("All files loaded");
+                onLoaded();
+            }
+        })
+    }
+};
+
+MidiManager.prototype.loadRemoteFile = function(path, callback) {
+    var fetch = new XMLHttpRequest();
+    fetch.open('GET', path);
+    fetch.overrideMimeType("text/plain; charset=x-user-defined");
+    fetch.onreadystatechange = function() {
+        if(this.readyState == 4 && this.status == 200) {
+            /* munge response into a binary string */
+            var t = this.responseText || "" ;
+            var ff = [];
+            var mx = t.length;
+            var scc= String.fromCharCode;
+            for (var z = 0; z < mx; z++) {
+                ff[z] = scc(t.charCodeAt(z) & 255);
+            }
+            callback(ff.join(""));
+        }
+    };
+    fetch.send();
+};
+
+MidiManager.prototype.play = function(midiFilename) {
+    //Play the file
+    var _this = this;
+    this.loadRemoteFile(midiFilename, function(data) {
+        this.midiFile = MidiFile(data);
+        this.synth = Synth(this.SAMPLERATE);
+        _this.replayer = Replayer(this.midiFile, this.synth, _this.audioBuffers);
+        var midiData = _this.replayer.getData();
+        _this.replayer.setTrackMapping(1, 1);
+        this.audio = AudioPlayer(_this.replayer, midiData);
+    })
+};
+
+MidiManager.prototype.muteTrack = function(trackNumber, muteStatus) {
+    this.replayer.setMuteTrack(trackNumber, muteStatus);
+};
+
+MidiManager.prototype.muteAllTracks = function() {
+    this.replayer.muteAllTracks();
+};
+
+MidiManager.prototype.setTrackMapping = function(track, instrument) {
+    this.replayer.setTrackMapping(track, instrument);
+};
 
 $(document).ready(function() {
 
     var lineToTrack = [undefined, undefined, undefined, undefined, undefined, undefined];
 
-    midiManager.init();
+    var manager = new MidiManager();
+    manager.init();
 
     //Graphics
     var game = new Phaser.Game(1024, 1360, Phaser.AUTO, '', { preload: preload, create: create });
@@ -239,14 +263,14 @@ $(document).ready(function() {
 
             //Did line come from existing track
             if(trackNumber !== undefined) {
-                midiManager.muteTrack(trackNumber, true);
+                manager.muteTrack(trackNumber, true);
                 trackOccupied[trackNumber-1] = false;
             }
             line.x = shapeCentres[centrePoint].x;
             line.y = shapeCentres[centrePoint].y;
             line.rotation = shapeCentres[centrePoint].rot;
             line.scale.y = shapeCentres[centrePoint].scale;
-            midiManager.muteTrack(centrePoint+1, false);
+            manager.muteTrack(centrePoint+1, false);
 
             lineToTrack[lineNumber] = centrePoint + 1;
             trackOccupied[centrePoint] = true;
@@ -264,7 +288,7 @@ $(document).ready(function() {
         line.rotation = 0;
         var trackNumber = lineToTrack[lineNumber];
         if(trackNumber !== undefined) {
-            midiManager.muteTrack(trackNumber, true);
+            manager.muteTrack(trackNumber, true);
             trackOccupied[trackNumber-1] = false;
             //DEBUG
             //console.log("Track ", lineToTrack[lineNumber], " muted");
