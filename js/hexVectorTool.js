@@ -135,6 +135,25 @@ $(document).ready(function() {
     var manager = new MidiManager();
     manager.init();
 
+    var numTracks = 6;
+    var options = manager.getInstruments();
+    var sel;
+    for(var track=1; track<=numTracks; ++track) {
+        sel = document.getElementById('selectTrack'+track);
+        var option;
+        for(var i=0; i<options.length; ++i) {
+            option = document.createElement('option');
+            option.innerHTML = options[i];
+            option.value = options[i];
+            sel.appendChild(option);
+        }
+    }
+
+    $('select[id^="selectTrack"]').on('change', function() {
+        var track = this.id.charAt(this.id.length-1);
+        manager.setTrackMappingId(track, this.value);
+    });
+
     //Graphics
     var game = new Phaser.Game(1024, 1360, Phaser.AUTO, '', { preload: preload, create: create });
     var player;
@@ -142,7 +161,6 @@ $(document).ready(function() {
     function preload() {
 
         game.load.image('vector', 'assets/vectorHex.png');
-        game.load.image('endPoint', 'assets/whiteCircle.png');
         /*
          MIDI.Player.addListener(function(data) {
          console.log("Channel = ", data.channel);
@@ -180,23 +198,9 @@ $(document).ready(function() {
     var numNotes = 6;
     var indent = 225;
     var noteLines = [];
-    var endPoints = [];
     var trackOccupied = [];
 
     function create() {
-
-        for(i=0; i<numNotes; ++i) {
-            noteLines[i] = game.add.sprite((lineSpacing*(i+1)) + indent, game.world.height - originYOffset, 'vector');
-            noteLines[i].lineNumber = i;
-            noteLines[i].anchor.x = 0.5;
-            noteLines[i].anchor.y = 0.5;
-            noteLines[i].scale.setTo(0.25, 0.35);
-            //  Enable input and allow for dragging
-            noteLines[i].inputEnabled = true;
-            noteLines[i].input.enableDrag();
-            noteLines[i].events.onDragStop.add(onDragStop, this);
-            trackOccupied[i] = false;
-        }
 
         var i=0;
         var numLines = pyramidLines.length;
@@ -212,20 +216,30 @@ $(document).ready(function() {
         graphics.moveTo(pyramidLines[0].x, pyramidLines[0].y);
         graphics.lineTo(pyramidLines[2].x, pyramidLines[2].y);
 
+        graphics.lineStyle(lineWidth, 0xffffff, 1);
+        graphics.beginFill(0xffffff);
+        for(i=0; i<(numLines-1); ++i) {
+            graphics.drawCircle(pyramidLines[i].x, pyramidLines[i].y, circleSize);
+        }
+        graphics.endFill();
+
         musicGroup = game.add.group();
         musicGroup.add(graphics);
 
         musicGroup.getBounds();
 
-        for(i=0; i<(numLines-1); ++i) {
-            endPoints[i] = game.add.sprite(pyramidLines[i].x, pyramidLines[i].y, 'endPoint');
-            endPoints[i].anchor.x = 0.5;
-            endPoints[i].anchor.y = 0.5;
-            endPoints[i].inputEnabled = true;
-            endPoints[i].input.enableDrag();
+        for(i=0; i<numNotes; ++i) {
+            noteLines[i] = game.add.sprite((lineSpacing*(i+1)) + indent, game.world.height - originYOffset, 'vector');
+            noteLines[i].lineNumber = i;
+            noteLines[i].anchor.x = 0.5;
+            noteLines[i].anchor.y = 0.5;
+            noteLines[i].scale.setTo(0.25, 0.35);
+            //  Enable input and allow for dragging
+            noteLines[i].inputEnabled = true;
+            noteLines[i].input.enableDrag();
+            noteLines[i].events.onDragStop.add(onDragStop, this);
+            trackOccupied[i] = false;
         }
-
-
 
 
         //  Being mp3 files these take time to decode, so we can't play them instantly

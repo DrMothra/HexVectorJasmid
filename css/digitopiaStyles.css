@@ -9,6 +9,9 @@
     left: 5%;
     color: white;
 }
+body {
+    background: #000;
+}
 #track1Select,
 #track2Select,
 #track3Select,
