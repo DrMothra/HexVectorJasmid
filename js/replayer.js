@@ -242,22 +242,22 @@ function Replayer(midiFile, synth, soundBuffers) {
 
 						break;
 					case 'noteOff':
-						//channels[event.channel].noteOff(event.noteNumber, event.velocity);
+						//DEBUG
+						break;
                         noteNum = event.noteNumber;
 						//DEBUG
 						//if(++counter < 30) {
 						//	console.log("Off = ", noteNum, " delay = ", delay);
 						//}
-						/*
+
 						noteId = noteNum.toString();
                         bufferId = instrument + '' + noteId;
                         buffer = audioBuffers[bufferId];
                         if (buffer) {
                             source = sources[channelId + '' + noteId];
                             if (source) {
-                                delete sources[channelId + '' + noteId];
-                            }
-                        }
+                                //delete sources[channelId + '' + noteId];
+
                                 if (source.gainNode) {
                                     // @Miranet: 'the values of 0.2 and 0.3 could of course be used as
                                     // a 'release' parameter for ADSR like time settings.'
@@ -277,7 +277,7 @@ function Replayer(midiFile, synth, soundBuffers) {
                                 //delete sources[channelId + '' + noteId];
                             }
                         }
-                        */
+
 
 						break;
 					case 'programChange':
