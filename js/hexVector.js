@@ -157,6 +157,8 @@ $(document).ready(function() {
             this.updateRequired = false;
             this.lineToTrack = [undefined, undefined, undefined, undefined, undefined, undefined];
             this.reset = true;
+            this.lineLength = 484;
+            /*
             this.shapeCentres = [
                 {x: 400, y: 175, rot: 1.225, scale: 0.425},
                 {x: 562.5, y: 257.5, rot: -0.5, scale: 0.53},
@@ -165,6 +167,7 @@ $(document).ready(function() {
                 {x: 462.5, y: 292.5, rot: -1.1, scale: 0.725},
                 {x: 400, y: 320, rot: 0.5, scale: 0.85}
             ];
+            */
             this.pyramidStartLines = [];
             this.pyramidLines = [
                 {x: 300, y: 210},
@@ -186,8 +189,9 @@ $(document).ready(function() {
             this.endPoints = [];
             this.endPointsStart = [];
             this.trackOccupied = [];
+            this.shapeCentres = [];
 
-            this.calculateLineCentres();
+            this.calculateLineProperties();
 
             this.graphics = game.add.graphics(0, 0);
 
@@ -286,15 +290,61 @@ $(document).ready(function() {
             this.graphics.lineTo(this.pyramidLines[3].x, this.pyramidLines[3].y);
         },
 
-        calculateLineCentres: function() {
-            var centreX, centreY, test;
-            for(var i=0; i<this.pyramidLines.length; ++i) {
+        calculateLineProperties: function() {
+            //Centre points
+            var i;
+            var centreX, centreY, centreObj;
+            for(i=0; i<this.pyramidLines.length-1; ++i) {
+                centreObj = {};
                 centreX = Math.abs(this.pyramidLines[i].x - this.pyramidLines[i+1].x)/2;
-                centreX += this.pyramidLines[i].x;
+                centreX += this.pyramidLines[i].x < this.pyramidLines[i+1].x ? this.pyramidLines[i].x : this.pyramidLines[i+1].x;
                 centreY = Math.abs(this.pyramidLines[i].y - this.pyramidLines[i+1].y)/2;
-                centreY += this.pyramidLines[i].y;
-                test = 0;
+                centreY += this.pyramidLines[i].y < this.pyramidLines[i+1].y ? this.pyramidLines[i].y : this.pyramidLines[i+1].y;
+                centreObj.x = centreX;
+                centreObj.y = centreY;
+                this.shapeCentres.push(centreObj);
             }
+            //Last 2 centres between point 1 and 3
+            centreObj = {};
+            centreX = Math.abs(this.pyramidLines[1].x - this.pyramidLines[3].x)/2;
+            centreX += this.pyramidLines[1].x < this.pyramidLines[3].x ? this.pyramidLines[1].x : this.pyramidLines[3].x;
+            centreY = Math.abs(this.pyramidLines[1].y - this.pyramidLines[3].y)/2;
+            centreY += this.pyramidLines[1].y < this.pyramidLines[3].y ? this.pyramidLines[1].y : this.pyramidLines[3].y;
+            centreObj.x = centreX;
+            centreObj.y = centreY;
+            this.shapeCentres.push(centreObj);
+
+            //Rotations
+            var rot, dist;
+            var point1 = new Phaser.Point();
+            var point2 = new Phaser.Point();
+            for(i=0; i<this.pyramidLines.length-1; ++i) {
+                point1.x = this.pyramidLines[i].x;
+                point1.y = this.pyramidLines[i].y;
+                point2.x = this.pyramidLines[i+1].x;
+                point2.y = this.pyramidLines[i+1].y;
+                rot = game.math.angleBetweenPoints(point1, point2) + (Math.PI/2);
+                this.shapeCentres[i].rot = rot;
+                dist = Phaser.Point.distance(point1, point2);
+                this.shapeCentres[i].scale = dist/this.lineLength;
+            }
+            //Last rotation between point 1 and 3
+            point1.x = this.pyramidLines[1].x;
+            point1.y = this.pyramidLines[1].y;
+            point2.x = this.pyramidLines[3].x;
+            point2.y = this.pyramidLines[3].y;
+            rot = game.math.angleBetweenPoints(point1, point2) + (Math.PI/2);
+            this.shapeCentres[i].rot = rot;
+            dist = Phaser.Point.distance(point1, point2);
+            this.shapeCentres[i].scale = dist/this.lineLength;
+        },
+
+        updateLineRotation: function() {
+
+        },
+
+        updateLineScale: function() {
+
         },
 
         onDragStop: function(noteLine, pointer) {
@@ -372,7 +422,7 @@ $(document).ready(function() {
                         line.rotation = this.shapeCentres[centrePoint].rot;
                         line.scale.y = this.shapeCentres[centrePoint].scale;
                     } else {
-                        resetLine(pointer, lineNumber);
+                        this.resetLine(pointer, lineNumber);
                     }
                     return;
                 }
