@@ -22,6 +22,13 @@ function Replayer(midiFile, synth, soundBuffers) {
 	var currentEvent = 0;
 	var masterVolume = 127;
 	var counter = 0;
+	//Effects
+	this.effects = new tuna.Chorus({
+		rate: 1.5,
+		feedback: 0.2,
+		delay: 0.0045,
+		bypass: 0
+	});
 
 	for (var i = 0; i < midiFile.tracks.length; i++) {
 		trackMute.push(true);
