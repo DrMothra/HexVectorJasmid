@@ -23,10 +23,27 @@ function Replayer(midiFile, synth, soundBuffers) {
 	var masterVolume = 127;
 	var counter = 0;
 	//Effects
-	this.effects = new tuna.Chorus({
+	var tuna = new Tuna(context);
+	var effectsDelay = new tuna.Delay({
+		feedback: 0.45,    //0 to 1+
+		delayTime: 150,    //how many milliseconds should the wet signal be delayed?
+		wetLevel: 0.25,    //0 to 1+
+		dryLevel: 1,       //0 to 1+
+		cutoff: 2000,      //cutoff frequency of the built in lowpass-filter. 20 to 22050
+		bypass: 0
+	});
+	var effectsChorus = new tuna.Chorus({
 		rate: 1.5,
 		feedback: 0.2,
 		delay: 0.0045,
+		bypass: 0
+	});
+	var effectsPhaser = new tuna.Phaser({
+		rate: 1.2,                     //0.01 to 8 is a decent range, but higher values are possible
+		depth: 0.3,                    //0 to 1
+		feedback: 0.2,                 //0 to 1+
+		stereoPhase: 30,               //0 to 180
+		baseModulationFrequency: 700,  //500 to 1500
 		bypass: 0
 	});
 
@@ -224,7 +241,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 
                         noteNum = event.noteNumber;
 						//DEBUG
-                        //console.log("On = ", noteNum, " delay = ", delay, " velocity = ", event.velocity);
+                        //console.log("On = ", noteNum, " delay = ", delay, " velocity = ", velocity);
 
                         if(noteNum === undefined) {
                             noteNum = 21;
@@ -235,13 +252,23 @@ function Replayer(midiFile, synth, soundBuffers) {
                         source = context.createBufferSource();
                         source.buffer = buffer;
 
-                        gain = (velocity / 127) * (masterVolume / 127) * 2 - 1;
-                        source.connect(context.destination);
+                        gain = (velocity / 127) * (masterVolume / 127) * 2;
+						//source.connect(context.destination);
+						var filter = context.createBiquadFilter();
+						filter.type = "bandpass";
+						filter.frequency.value = 1000;
+						//filter.detune.value = 0;
+						//filter.gain.value = 1;
+						filter.Q.value = 10;
+                        source.connect(filter);
                         source.playbackRate.value = 1; // pitch shift
                         source.gainNode = context.createGain(); // gain
-                        source.gainNode.connect(context.destination);
-                        source.gainNode.gain.value = Math.min(1.0, Math.max(-1.0, gain));
-                        source.connect(source.gainNode);
+						//source.connect(source.gainNode);
+						filter.connect(source.gainNode);
+						//filter.connect(context.destination);
+						source.gainNode.connect(context.destination);
+                        //source.gainNode.gain.value = Math.min(1.0, Math.max(-1.0, gain));
+						source.gainNode.gain.value = gain;
 
                         source.start(delay);
                         channelId = 0;
