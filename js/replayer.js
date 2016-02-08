@@ -19,33 +19,12 @@ function Replayer(midiFile, synth, soundBuffers) {
 	var webkitAudio = window.AudioContext || window.webkitAudioContext;
 	var context = new webkitAudio();
 	var playbackTime = 0;
+	var playbackRate = 1;
+	var filterFrequency = 1000;
+	var filterGain = 0;
 	var currentEvent = 0;
 	var masterVolume = 127;
 	var counter = 0;
-	//Effects
-	var tuna = new Tuna(context);
-	var effectsDelay = new tuna.Delay({
-		feedback: 0.45,    //0 to 1+
-		delayTime: 150,    //how many milliseconds should the wet signal be delayed?
-		wetLevel: 0.25,    //0 to 1+
-		dryLevel: 1,       //0 to 1+
-		cutoff: 2000,      //cutoff frequency of the built in lowpass-filter. 20 to 22050
-		bypass: 0
-	});
-	var effectsChorus = new tuna.Chorus({
-		rate: 1.5,
-		feedback: 0.2,
-		delay: 0.0045,
-		bypass: 0
-	});
-	var effectsPhaser = new tuna.Phaser({
-		rate: 1.2,                     //0.01 to 8 is a decent range, but higher values are possible
-		depth: 0.3,                    //0 to 1
-		feedback: 0.2,                 //0 to 1+
-		stereoPhase: 30,               //0 to 180
-		baseModulationFrequency: 700,  //500 to 1500
-		bypass: 0
-	});
 
 	for (var i = 0; i < midiFile.tracks.length; i++) {
 		trackMute.push(true);
@@ -255,13 +234,13 @@ function Replayer(midiFile, synth, soundBuffers) {
                         gain = (velocity / 127) * (masterVolume / 127) * 2;
 						//source.connect(context.destination);
 						var filter = context.createBiquadFilter();
-						filter.type = "bandpass";
-						filter.frequency.value = 1000;
+						filter.type = "peaking";
+						filter.frequency.value = filterFrequency;
 						//filter.detune.value = 0;
-						//filter.gain.value = 1;
-						filter.Q.value = 10;
+						filter.gain.value = filterGain;
+						filter.Q.value = 0.6;
                         source.connect(filter);
-                        source.playbackRate.value = 1; // pitch shift
+                        source.playbackRate.value = playbackRate; // pitch shift
                         source.gainNode = context.createGain(); // gain
 						//source.connect(source.gainNode);
 						filter.connect(source.gainNode);
@@ -347,6 +326,14 @@ function Replayer(midiFile, synth, soundBuffers) {
 		trackToInstrument[track] = instrument;
 	}
 
+	function setPlaybackRate(rate) {
+		playbackRate = rate;
+	}
+
+	function setFilterFrequency(freq, gain) {
+		filterFrequency = freq;
+		filterGain = gain;
+	}
 	function getData() {
 		return clone(temporal);
 	}
@@ -358,6 +345,8 @@ function Replayer(midiFile, synth, soundBuffers) {
 		'processEvents': processEvents,
 		'setTrackMapping': setTrackMapping,
 		'reset': reset,
+		'setPlaybackRate': setPlaybackRate,
+		'setFilterFrequency': setFilterFrequency,
 		"getData": getData,
 		'processAudioEvents': processAudioEvents
 	};

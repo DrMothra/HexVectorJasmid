@@ -6,8 +6,7 @@ var MidiManager = function() {
     this.midiFile = null;
     this.SAMPLERATE = 44100;
     this.soundFontURL = "./soundfont/";
-    this.instruments = ['acoustic_grand_piano', 'synth_drum', 'electric_grand_piano', 'lead_2_sawtooth', 'marimba',
-                            'pad_3_polysynth', 'string_ensemble_1', 'synth_strings_1'];
+    this.instruments = ['electric_grand_piano'];
     this.audioContext = null;
     this.audioBuffers = {};
     this.keyToNote = {};
@@ -134,6 +133,16 @@ MidiManager.prototype.allTracksLoaded = function() {
     return this.tracksLoaded;
 };
 
+MidiManager.prototype.setPlaybackRate = function(rate) {
+    this.replayer.setPlaybackRate(rate);
+};
+
+MidiManager.prototype.setFilterFrequency = function(freq, gain) {
+    if(freq === undefined) freq = 1000;
+    if(gain === undefined) gain = 0;
+    this.replayer.setFilterFrequency(freq, gain);
+};
+
 $(document).ready(function() {
 
     var manager = new MidiManager();
@@ -245,7 +254,7 @@ $(document).ready(function() {
             this.endPoints[0].linesOccupied = [0, 3, 4];
             this.endPoints[1].linesOccupied = [0, 1, 5];
             this.endPoints[2].linesOccupied = [1, 2, 4];
-            this.endPoints[3].linesOccupied = [2, 3, 4];
+            this.endPoints[3].linesOccupied = [2, 3, 5];
 
             //Need to keep record of start positions so we can reset
             var point;
@@ -270,6 +279,7 @@ $(document).ready(function() {
         drawPyramid: function() {
             var i;
             if(this.reset) {
+                var lineNumber;
                 for(i=0; i<this.pyramidLines.length; ++i) {
                     this.pyramidLines[i].x = this.pyramidStartLines[i].x;
                     this.pyramidLines[i].y = this.pyramidStartLines[i].y;
@@ -280,9 +290,12 @@ $(document).ready(function() {
                 }
                 for(i=0; i<this.trackOccupied.length; ++i) {
                     if(this.trackOccupied[i]) {
-                        this.noteLines[i].position.setTo(this.shapeCentres[i].x, this.shapeCentres[i].y);
-                        this.noteLines[i].scale.setTo(0.25, this.shapeCentres[i].scale);
-                        this.noteLines[i].rotation = this.shapeCentres[i].rot;
+                        //Get line from track
+                        lineNumber = this.pyramidToTrack[i];
+                        --lineNumber;
+                        this.noteLines[lineNumber].position.setTo(this.shapeCentres[i].x, this.shapeCentres[i].y);
+                        this.noteLines[lineNumber].scale.setTo(0.25, this.shapeCentres[i].scale);
+                        this.noteLines[lineNumber].rotation = this.shapeCentres[i].rot;
                     }
                 }
             }
@@ -350,39 +363,46 @@ $(document).ready(function() {
             var rot, dist, centreX, centreY;
             var point1 = new Phaser.Point();
             var point2 = new Phaser.Point();
+            var lineNumber;
             for(var i=0; i<this.trackOccupied.length-1; ++i) {
                 if(this.trackOccupied[i]) {
                     //Get line from track
-
+                    lineNumber = this.pyramidToTrack[i];
+                    --lineNumber;
                     centreX = Math.abs(this.pyramidLines[i].x - this.pyramidLines[i+1].x)/2;
                     centreX += this.pyramidLines[i].x < this.pyramidLines[i+1].x ? this.pyramidLines[i].x : this.pyramidLines[i+1].x;
                     centreY = Math.abs(this.pyramidLines[i].y - this.pyramidLines[i+1].y)/2;
                     centreY += this.pyramidLines[i].y < this.pyramidLines[i+1].y ? this.pyramidLines[i].y : this.pyramidLines[i+1].y;
-                    this.noteLines[i].position.setTo(centreX, centreY);
+                    this.noteLines[lineNumber].position.setTo(centreX, centreY);
                     point1.x = this.pyramidLines[i].x;
                     point1.y = this.pyramidLines[i].y;
                     point2.x = this.pyramidLines[i+1].x;
                     point2.y = this.pyramidLines[i+1].y;
                     rot = game.math.angleBetweenPoints(point1, point2) + (Math.PI/2);
-                    this.noteLines[i].rotation = rot;
+                    //DEBUG
+                    console.log("Line = ", lineNumber);
+                    this.noteLines[lineNumber].rotation = rot;
                     dist = Phaser.Point.distance(point1, point2);
-                    this.noteLines[i].scale.setTo(0.25, dist/this.lineLength);
+                    this.noteLines[lineNumber].scale.setTo(0.25, dist/this.lineLength);
                 }
             }
             if(this.trackOccupied[5]) {
+                //Get line from track
+                lineNumber = this.pyramidToTrack[i];
+                --lineNumber;
                 centreX = Math.abs(this.pyramidLines[1].x - this.pyramidLines[3].x)/2;
                 centreX += this.pyramidLines[1].x < this.pyramidLines[3].x ? this.pyramidLines[1].x : this.pyramidLines[3].x;
                 centreY = Math.abs(this.pyramidLines[1].y - this.pyramidLines[3].y)/2;
                 centreY += this.pyramidLines[1].y < this.pyramidLines[3].y ? this.pyramidLines[1].y : this.pyramidLines[3].y;
-                this.noteLines[i].position.setTo(centreX, centreY);
+                this.noteLines[lineNumber].position.setTo(centreX, centreY);
                 point1.x = this.pyramidLines[1].x;
                 point1.y = this.pyramidLines[1].y;
                 point2.x = this.pyramidLines[3].x;
                 point2.y = this.pyramidLines[3].y;
                 rot = game.math.angleBetweenPoints(point1, point2) + (Math.PI/2);
-                this.noteLines[5].rotation = rot;
+                this.noteLines[lineNumber].rotation = rot;
                 dist = Phaser.Point.distance(point1, point2);
-                this.noteLines[5].scale.setTo(0.25, dist/this.lineLength);
+                this.noteLines[lineNumber].scale.setTo(0.25, dist/this.lineLength);
             }
         },
 
@@ -421,11 +441,43 @@ $(document).ready(function() {
             }
 
             var pointsLength = endPoint.movePoints.length;
+            var pointToMove;
             for(var i=0; i<pointsLength; ++i) {
+                pointToMove = endPoint.movePoints[0];
                 this.pyramidLines[endPoint.movePoints[i]].x = pointer.x;
                 this.pyramidLines[endPoint.movePoints[i]].y = pointer.y;
                 this.updateLineProperties();
             }
+            var delta = pointer.x - this.endPointsStart[pointToMove].x;
+
+            if(delta > 0) {
+                delta /= 15;
+                if(delta < 1) delta = 1;
+                if(delta > 10) delta = 10;
+            } else {
+                if(delta < -150) delta = -150;
+                delta /= 150;
+                delta += 1;
+                if(delta < 0.25) delta = 0.25;
+            }
+            //DEBUG
+            //console.log("Delta = ", delta);
+
+            //DEBUG
+            var deltaY = pointer.y - this.endPointsStart[pointToMove].y;
+            //DEBUG
+            if(deltaY < 0) {
+                deltaY = ((deltaY * 6000/200) * -1) + 1000;
+                if(deltaY > 7000) deltaY = 7000;
+            } else {
+                deltaY = 1000 - (deltaY * 820/200);
+                if(deltaY < 180) deltaY = 180;
+            }
+
+            console.log("Delta = ", deltaY);
+
+            manager.setPlaybackRate(delta);
+            manager.setFilterFrequency(deltaY, 15);
             this.updateRequired = true;
         },
 
@@ -433,6 +485,8 @@ $(document).ready(function() {
             //Restore everything
             this.reset = true;
             this.updateRequired = true;
+            manager.setPlaybackRate(1);
+            manager.setFilterFrequency(1000, 0);
         },
 
         snapToLine: function(pointer, lineNumber) {
@@ -449,7 +503,7 @@ $(document).ready(function() {
             }
 
             var line = this.noteLines[lineNumber];
-            if(centrePoint != undefined) {
+            if (centrePoint != undefined) {
                 //Don't snap to existing line
                 var previousCentre = undefined;
                 for(i=0; i<this.pyramidToTrack.length; ++i) {
@@ -460,14 +514,19 @@ $(document).ready(function() {
                         break;
                     }
                 }
+                //DEBUG
+                if(previousCentre === undefined) {
+                    console.log("No previous centre");
+                }
+
                 if(this.trackOccupied[centrePoint]) {
                     if(previousCentre !== undefined) {
-                        line.x = this.shapeCentres[centrePoint].x;
-                        line.y = this.shapeCentres[centrePoint].y;
-                        line.rotation = this.shapeCentres[centrePoint].rot;
-                        line.scale.y = this.shapeCentres[centrePoint].scale;
+                        line.x = this.shapeCentres[previousCentre].x;
+                        line.y = this.shapeCentres[previousCentre].y;
+                        line.rotation = this.shapeCentres[previousCentre].rot;
+                        line.scale.y = this.shapeCentres[previousCentre].scale;
                     } else {
-                        this.resetLine(pointer, lineNumber, centrePoint);
+                        this.resetLine(pointer, lineNumber);
                     }
                     return;
                 }
@@ -477,6 +536,7 @@ $(document).ready(function() {
                         manager.muteTrack(this.pyramidToTrack[previousCentre], true);
                     }
                     this.trackOccupied[previousCentre] = false;
+                    this.pyramidToTrack[previousCentre] = undefined;
                     //DEBUG
                     //console.log("Pyramid ", centrePoint, " Track ", trackNumber);
                 }
@@ -495,7 +555,7 @@ $(document).ready(function() {
             }
         },
 
-        resetLine: function(pointer, lineNumber, centrePoint) {
+        resetLine: function(pointer, lineNumber) {
             var line = this.noteLines[lineNumber];
 
             line.x = (this.lineSpacing * (lineNumber+1)) + this.indent;
