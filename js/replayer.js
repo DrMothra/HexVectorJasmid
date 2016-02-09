@@ -228,6 +228,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 						noteId = noteNum.toString();
                         bufferId = instrument + '' + noteId;
                         buffer = audioBuffers[bufferId];
+						if(buffer === undefined) break;
                         source = context.createBufferSource();
                         source.buffer = buffer;
 

@@ -143,12 +143,31 @@ MidiManager.prototype.setFilterFrequency = function(freq, gain) {
     this.replayer.setFilterFrequency(freq, gain);
 };
 
+function launchIntoFullscreen(element) {
+    if(element.requestFullscreen) {
+        element.requestFullscreen();
+    } else if(element.mozRequestFullScreen) {
+        element.mozRequestFullScreen();
+    } else if(element.webkitRequestFullscreen) {
+        element.webkitRequestFullscreen();
+    } else if(element.msRequestFullscreen) {
+        element.msRequestFullscreen();
+    }
+}
+
 $(document).ready(function() {
 
     var manager = new MidiManager();
     manager.init();
 
-    var game = new Phaser.Game(1024, 1360, Phaser.AUTO, '');
+    var game = new Phaser.Game(800, 1200, Phaser.AUTO, 'playArea');
+
+    $('#logo').on("click", function() {
+        //Full screen
+        launchIntoFullscreen(document.documentElement); // the whole page
+        $('#logo').hide();
+        $('#playArea').show();
+    });
 
     var Pyramid = {
         preload: function() {
@@ -161,30 +180,20 @@ $(document).ready(function() {
             var i;
             var numNotes = 6;
             this.lineSpacing = 64;
-            this.indent = 225;
-            this.originYOffset = 400;
+            this.indent = 175;
+            this.originYOffset = 300;
             this.updateRequired = false;
             this.pyramidToTrack = [undefined, undefined, undefined, undefined, undefined, undefined];
             this.reset = true;
             this.lineLength = 484;
-            /*
-            this.shapeCentres = [
-                {x: 400, y: 175, rot: 1.225, scale: 0.425},
-                {x: 562.5, y: 257.5, rot: -0.5, scale: 0.53},
-                {x: 462.5, y: 437.5, rot: 1.2, scale: 0.7},
-                {x: 300, y: 355, rot: 0, scale: 0.575},
-                {x: 462.5, y: 292.5, rot: -1.1, scale: 0.725},
-                {x: 400, y: 320, rot: 0.5, scale: 0.85}
-            ];
-            */
             this.pyramidStartLines = [];
             this.pyramidLines = [
-                {x: 300, y: 210},
-                {x: 500, y: 140},
-                {x: 625, y: 375},
-                {x: 300, y: 500},
-                {x: 300, y: 210},
-                {x: 625, y: 375}
+                {x: 230, y: 210},
+                {x: 430, y: 140},
+                {x: 555, y: 375},
+                {x: 230, y: 500},
+                {x: 230, y: 210},
+                {x: 555, y: 375}
             ];
             var lineSegment;
             for(i=0; i<this.pyramidLines.length; ++i) {
@@ -199,6 +208,9 @@ $(document).ready(function() {
             this.endPointsStart = [];
             this.trackOccupied = [];
             this.shapeCentres = [];
+
+            this.base = game.add.graphics(0,0);
+            this.drawBase();
 
             this.calculateLineProperties();
 
@@ -216,12 +228,13 @@ $(document).ready(function() {
             this.musicGroup.getBounds();
 
             //Lines that trigger tracks
+            this.lineXScale = 0.25, this.lineYScale = 0.4;
             for(i=0; i<numNotes; ++i) {
                 this.noteLines.push(game.add.sprite((this.lineSpacing*(i+1)) + this.indent, game.world.height - this.originYOffset, 'vector'));
                 this.noteLines[i].lineNumber = i;
                 this.noteLines[i].anchor.x = 0.5;
                 this.noteLines[i].anchor.y = 0.5;
-                this.noteLines[i].scale.setTo(0.25, 0.35);
+                this.noteLines[i].scale.setTo(this.lineXScale, this.lineYScale);
                 //  Enable input and allow for dragging
                 this.noteLines[i].inputEnabled = true;
                 this.noteLines[i].input.enableDrag();
@@ -276,6 +289,13 @@ $(document).ready(function() {
             }
         },
 
+        drawBase: function() {
+            this.base.lineStyle(0);
+            this.base.beginFill(0x404040, 1.0);
+            this.base.drawRect(0, 750, 800, 400);
+            this.base.endFill();
+        },
+
         drawPyramid: function() {
             var i;
             if(this.reset) {
@@ -294,7 +314,7 @@ $(document).ready(function() {
                         lineNumber = this.pyramidToTrack[i];
                         --lineNumber;
                         this.noteLines[lineNumber].position.setTo(this.shapeCentres[i].x, this.shapeCentres[i].y);
-                        this.noteLines[lineNumber].scale.setTo(0.25, this.shapeCentres[i].scale);
+                        this.noteLines[lineNumber].scale.setTo(this.lineXScale, this.shapeCentres[i].scale);
                         this.noteLines[lineNumber].rotation = this.shapeCentres[i].rot;
                     }
                 }
@@ -383,7 +403,7 @@ $(document).ready(function() {
                     console.log("Line = ", lineNumber);
                     this.noteLines[lineNumber].rotation = rot;
                     dist = Phaser.Point.distance(point1, point2);
-                    this.noteLines[lineNumber].scale.setTo(0.25, dist/this.lineLength);
+                    this.noteLines[lineNumber].scale.setTo(this.lineXScale, dist/this.lineLength);
                 }
             }
             if(this.trackOccupied[5]) {
@@ -402,7 +422,7 @@ $(document).ready(function() {
                 rot = game.math.angleBetweenPoints(point1, point2) + (Math.PI/2);
                 this.noteLines[lineNumber].rotation = rot;
                 dist = Phaser.Point.distance(point1, point2);
-                this.noteLines[lineNumber].scale.setTo(0.25, dist/this.lineLength);
+                this.noteLines[lineNumber].scale.setTo(this.lineXScale, dist/this.lineLength);
             }
         },
 
@@ -560,7 +580,7 @@ $(document).ready(function() {
 
             line.x = (this.lineSpacing * (lineNumber+1)) + this.indent;
             line.y = game.world.height - this.originYOffset;
-            line.scale.y = 0.35;
+            line.scale.y = this.lineYScale;
             line.rotation = 0;
 
             //Was this track on a pyramid line

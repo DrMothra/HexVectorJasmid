@@ -3,38 +3,18 @@
 .hover {
     position: absolute;
     font-size: 1.4vw;
+    color: white;
 }
 #loadIndicator {
     top: 5%;
     left: 5%;
-    color: white;
 }
 body {
     background: #000;
 }
-#track1Select,
-#track2Select,
-#track3Select,
-#track4Select,
-#track5Select,
-#track6Select{
-    right: 20%;
+#logo img {
+    width: 100%;
 }
-#track1Select {
-    top: 5%;
- }
-#track2Select {
-    top: 10%;
-}
-#track3Select {
-    top: 15%;
-}
-#track4Select {
-    top: 20%;
-}
-#track5Select {
-    top: 25%;
-}
-#track6Select {
-    top: 30%;
+.hide {
+    display: none;
 }
