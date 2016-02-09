@@ -228,7 +228,11 @@ function Replayer(midiFile, synth, soundBuffers) {
 						noteId = noteNum.toString();
                         bufferId = instrument + '' + noteId;
                         buffer = audioBuffers[bufferId];
-						if(buffer === undefined) break;
+						if(buffer === undefined){
+							//DEBUG
+							//console.log("No note ", bufferId);
+							break;
+						}
                         source = context.createBufferSource();
                         source.buffer = buffer;
 
@@ -257,7 +261,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 						break;
 					case 'noteOff':
 						//DEBUG
-						break;
+						//break;
                         noteNum = event.noteNumber;
 						//DEBUG
 						//if(++counter < 30) {

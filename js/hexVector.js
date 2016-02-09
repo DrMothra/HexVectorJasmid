@@ -1,173 +1,127 @@
 /**
  * Created by DrTone on 29/01/2016.
  */
-var MidiManager = function() {
-    this.replayer = null;
-    this.midiFile = null;
-    this.SAMPLERATE = 44100;
-    this.soundFontURL = "./soundfont/";
-    this.instruments = ['electric_grand_piano'];
-    this.audioContext = null;
-    this.audioBuffers = {};
-    this.keyToNote = {};
-    this.tracksLoaded = false;
-};
-
-MidiManager.prototype.getInstruments = function() {
-    return this.instruments;
-};
-
-MidiManager.prototype.init = function() {
-    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    this.setupNotes();
+var STARTING = 0, PLAYING = 1;
+var screenManager = (function() {
+    var status;
+    var continueTime = 10 * 1000;
+    var countdownTime = 5 * 1000;
+    var touched = false;
     var _this = this;
-    this.loadSoundfonts(function() {
-        _this.loadAudiofiles(function() {
-            _this.play("audio/MIDIMasterv0.2.mid");
-        })
-    })
-};
 
-MidiManager.prototype.setupNotes = function() {
-    var A0 = 0x15; // first note
-    var C8 = 0x6C; // last note
-    var number2key = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
-    for (var n = A0; n <= C8; n++) {
-        var octave = (n - 12) / 12 >> 0;
-        var name = number2key[n % 12] + octave;
-        this.keyToNote[name] = n;
-    }
-};
+    return {
+        init: function() {
+            status = STARTING;
+        },
 
-MidiManager.prototype.loadSoundfonts = function(onLoaded) {
-    var numRequests = this.instruments.length;
-    var filesLoaded = 0;
-    for(var i=0; i<numRequests; ++i) {
-        loadRequest(this.soundFontURL, this.instruments[i], function() {
+        setStatus: function(state) {
+            status = state;
+        },
+
+        getStatus: function() {
+            return status;
+        },
+
+        touched: function() {
+            touched = true;
+        },
+
+        startWaiting: function() {
             //DEBUG
-            console.log("File loaded");
-            if(++filesLoaded === numRequests) {
-                //DEBUG
-                console.log("All files loaded");
-                onLoaded();
+            console.log("Started waiting...");
+
+            var waitingTimer = setInterval(function() {
+                if(!touched) {
+                    $('#continue').show();
+                    clearInterval(waitingTimer);
+                    startCountdown();
+                } else {
+                    touched = false;
+                }
+            }, continueTime);
+
+            function startCountdown() {
+                var countdown = 5;
+                var elem = $('#countdown');
+                elem.html(countdown.toString());
+                var countdownTimer = setInterval(function() {
+                    //Update clock
+                    --countdown;
+                    elem.html(countdown.toString());
+                    if(countdown <= 0) {
+                        clearInterval(countdownTimer);
+                        $('#continue').hide();
+                        var event = new Event("reset");
+                        document.getElementById('playArea').dispatchEvent(event);
+                        status = STARTING;
+                    }
+                }, 1000);
             }
-        })
-    }
-};
+        },
 
-MidiManager.prototype.loadAudiofiles = function(onLoaded) {
-    var numRequests = this.instruments.length;
-    var filesLoaded = 0;
-    for(var i=0; i<this.instruments.length; ++i) {
-        loadAudioFiles(this.audioContext, this.keyToNote, this.instruments[i], i, this.audioBuffers, function() {
-            //DEBUG
-            console.log("File loaded");
-            if(++filesLoaded === numRequests) {
-                //DEBUG
-                console.log("All files loaded");
-                onLoaded();
+        launchIntoFullscreen: function(element) {
+            if(element.requestFullscreen) {
+                element.requestFullscreen();
+            } else if(element.mozRequestFullScreen) {
+                element.mozRequestFullScreen();
+            } else if(element.webkitRequestFullscreen) {
+                element.webkitRequestFullscreen();
+            } else if(element.msRequestFullscreen) {
+                element.msRequestFullscreen();
             }
-        })
-    }
-};
+        },
 
-MidiManager.prototype.loadRemoteFile = function(path, callback) {
-    var fetch = new XMLHttpRequest();
-    fetch.open('GET', path);
-    fetch.overrideMimeType("text/plain; charset=x-user-defined");
-    fetch.onreadystatechange = function() {
-        if(this.readyState == 4 && this.status == 200) {
-            /* munge response into a binary string */
-            var t = this.responseText || "" ;
-            var ff = [];
-            var mx = t.length;
-            var scc= String.fromCharCode;
-            for (var z = 0; z < mx; z++) {
-                ff[z] = scc(t.charCodeAt(z) & 255);
-            }
-            callback(ff.join(""));
-        }
-    };
-    fetch.send();
-};
-
-MidiManager.prototype.play = function(midiFilename) {
-    //Play the file
-    var _this = this;
-    this.loadRemoteFile(midiFilename, function(data) {
-        $('#loadIndicator').html("Loaded");
-        this.midiFile = MidiFile(data);
-        this.synth = Synth(this.SAMPLERATE);
-        _this.replayer = Replayer(this.midiFile, this.synth, _this.audioBuffers);
-        var midiData = _this.replayer.getData();
-        _this.tracksLoaded = true;
-        this.audio = AudioPlayer(_this.replayer, midiData);
-    })
-};
-
-MidiManager.prototype.muteTrack = function(trackNumber, muteStatus) {
-    this.replayer.setMuteTrack(trackNumber, muteStatus);
-};
-
-MidiManager.prototype.muteAllTracks = function() {
-    this.replayer.muteAllTracks();
-};
-
-MidiManager.prototype.setTrackMapping = function(track, instrument) {
-    this.replayer.setTrackMapping(track, instrument);
-};
-
-MidiManager.prototype.setTrackMappingId = function(track, instrumentId) {
-    //Get instrument value from list
-    var instrument = 0;
-    for(var i=0;  i<this.instruments.length; ++i) {
-        if(this.instruments[i] === instrumentId) {
-            instrument = i;
-            break;
+        isFullScreen: function() {
+            return (document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement);
         }
     }
-    this.replayer.setTrackMapping(track, instrument);
-};
-
-MidiManager.prototype.allTracksLoaded = function() {
-    return this.tracksLoaded;
-};
-
-MidiManager.prototype.setPlaybackRate = function(rate) {
-    this.replayer.setPlaybackRate(rate);
-};
-
-MidiManager.prototype.setFilterFrequency = function(freq, gain) {
-    if(freq === undefined) freq = 1000;
-    if(gain === undefined) gain = 0;
-    this.replayer.setFilterFrequency(freq, gain);
-};
-
-function launchIntoFullscreen(element) {
-    if(element.requestFullscreen) {
-        element.requestFullscreen();
-    } else if(element.mozRequestFullScreen) {
-        element.mozRequestFullScreen();
-    } else if(element.webkitRequestFullscreen) {
-        element.webkitRequestFullscreen();
-    } else if(element.msRequestFullscreen) {
-        element.msRequestFullscreen();
-    }
-}
+})();
 
 $(document).ready(function() {
+
+    screenManager.init();
 
     var manager = new MidiManager();
     manager.init();
 
-    var game = new Phaser.Game(800, 1200, Phaser.AUTO, 'playArea');
+    var wsuri = "ws://10.154.157.1:48631";
+    var websocket = new WebSocket(wsuri);
+    websocket.onopen = function() {
+        websocket.send("Hello " + Date.now().toString());
+    };
+
+    websocket.onmessage = function(evt) {
+        //DEBUG
+        console.log("Received ", evt.data);
+    };
+    //DEBUG
+    console.log("Stored id ", localStorage.getItem("tabletId"));
+
+    var game = new Phaser.Game(800, 1280, Phaser.AUTO, 'playArea');
 
     $('#logo').on("click", function() {
         //Full screen
-        launchIntoFullscreen(document.documentElement); // the whole page
-        $('#logo').hide();
-        $('#playArea').show();
+        if(screenManager.isFullScreen()) {
+            $('#logo').hide();
+            $('#playArea').show();
+            screenManager.setStatus(PLAYING);
+            screenManager.startWaiting();
+        } else {
+            screenManager.launchIntoFullscreen(document.documentElement); // the whole page
+        }
     });
+
+    $('#playArea').on("click", function() {
+        screenManager.touched();
+    });
+
+    document.getElementById('playArea').addEventListener("reset", function() {
+        //DEBUG
+        console.log("Received reset");
+    }, false);
 
     var Pyramid = {
         preload: function() {
@@ -181,19 +135,19 @@ $(document).ready(function() {
             var numNotes = 6;
             this.lineSpacing = 64;
             this.indent = 175;
-            this.originYOffset = 300;
+            this.originYOffset = 200;
             this.updateRequired = false;
             this.pyramidToTrack = [undefined, undefined, undefined, undefined, undefined, undefined];
             this.reset = true;
             this.lineLength = 484;
             this.pyramidStartLines = [];
             this.pyramidLines = [
-                {x: 230, y: 210},
-                {x: 430, y: 140},
-                {x: 555, y: 375},
-                {x: 230, y: 500},
-                {x: 230, y: 210},
-                {x: 555, y: 375}
+                {x: 230, y: 310},
+                {x: 430, y: 240},
+                {x: 555, y: 475},
+                {x: 230, y: 600},
+                {x: 230, y: 310},
+                {x: 555, y: 475}
             ];
             var lineSegment;
             for(i=0; i<this.pyramidLines.length; ++i) {
@@ -292,7 +246,7 @@ $(document).ready(function() {
         drawBase: function() {
             this.base.lineStyle(0);
             this.base.beginFill(0x404040, 1.0);
-            this.base.drawRect(0, 750, 800, 400);
+            this.base.drawRect(0, 900, 800, 400);
             this.base.endFill();
         },
 

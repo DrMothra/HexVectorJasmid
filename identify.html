@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Identify Tablet</title>
+
+</head>
+<body>
+
+<form onsubmit="setId()">
+    Enter id:
+    <input type="text" id="tabletId">
+    <input type="submit">
+</form>
+
+<script>
+    function setId()  {
+        var id = document.getElementById("tabletId");
+        localStorage.setItem("tabletId", id.value);
+        //DEBUG
+        console.log("Id set to ", id.value);
+    }
+</script>
+</body>
+</html>

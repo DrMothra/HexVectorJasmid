@@ -14,7 +14,7 @@ function loadRequest(soundfontpath, instrument, onLoaded) {
         if(xhr.readyState === 4) {
             if(xhr.status === 200) {
                 var response = event.target.responseText;
-                console.log("Loaded soundfont file");
+                console.log("Loaded soundfont file ", url);
                 var script = document.createElement('script');
                 script.language = 'javascript';
                 script.type = 'text/javascript';
