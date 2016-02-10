@@ -51,3 +51,8 @@ body {
     top: 3%;
     left: 28%;
 }
+#debugInfo {
+    font-size: 3.8vw;
+    top: 2%;
+    left: 3%;
+}

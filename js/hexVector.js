@@ -4,7 +4,7 @@
 var STARTING = 0, PLAYING = 1, TIMED_OUT = 2;
 var screenManager = (function() {
     var status;
-    var continueTime = 10 * 1000;
+    var continueTime = 1000 * 1000;
     var countdownTime = 1000;
     var playingTime = 180 * 1000;
     var waitingTimer, countdownTimer, playingTimer;
@@ -112,25 +112,60 @@ var screenManager = (function() {
 
 $(document).ready(function() {
 
+    //Get id
+    var synced = false;
+    var userId = localStorage.getItem("tabletId");
     screenManager.init();
 
     var manager = new MidiManager();
-    manager.init();
+    manager.init(userId);
 
-    /*
-    var wsuri = "ws://10.154.157.1:48631";
-    var websocket = new WebSocket(wsuri);
-    websocket.onopen = function() {
-        websocket.send("Hello " + Date.now().toString());
-    };
+    var wsUrl = "ws://192.168.0.14";
+    var wsPort = 8887;
+    var syncIndex, syncStr = 'Sync', syncTime;
+    connectionManager.init(userId);
+    connectionManager.connect(wsUrl, wsPort, function(data) {
+        //See if sync message
+        if(synced) return;
+        syncIndex = data.indexOf(syncStr);
+        if(syncIndex !== -1) {
+            data = data.substr(syncStr.length, data.length);
+            syncTime = parseInt(data);
+            if(isNaN(syncTime)) {
+                //DEBUG
+                console.log("Bad sync time!");
+            } else {
+                //DEBUG
+                console.log("Sync time = ", syncTime);
+                manager.setCurrentPlaybackTime(syncTime);
+                //synced = true;
+                //DEBUG
+                $('#debug').html(syncTime.toString());
+            }
+        }
+    });
 
-    websocket.onmessage = function(evt) {
-        //DEBUG
-        console.log("Received ", evt.data);
-    };
-    */
     //DEBUG
-    console.log("Stored id ", localStorage.getItem("tabletId"));
+    console.log("Stored id ", userId);
+    $('#debug').html(userId);
+
+    if(userId === undefined) {
+        //DEBUG
+        console.log("No user id!!!!!");
+    }
+
+    //Broadcast time sync
+    if(userId.indexOf("server") !== -1) {
+        //This is server - broadcast sync
+        var syncTime = 10 * 1000;
+        var timeSyncTimer = setInterval(function() {
+            //DEBUG
+            //console.log("Sent sync");
+            var time = manager.getPlaybackTime().toString();
+            connectionManager.sendMessage("Sync" + time);
+            $('#debug').html(time);
+        }, syncTime);
+    }
 
     var game = new Phaser.Game(800, 1280, Phaser.AUTO, 'playArea');
 

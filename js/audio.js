@@ -1,6 +1,6 @@
 var sampleRate = 44100; /* hard-coded in Flash player */
 
-function AudioPlayer(generator, midiData, opts) {
+function AudioPlayer(generator, midiData, userId, opts) {
 	if (!opts) opts = {};
 	var latency = opts.latency || 1;
 	var checkInterval = latency * 100 /* in ms */
@@ -8,6 +8,11 @@ function AudioPlayer(generator, midiData, opts) {
 	var audioElement = new Audio();
 	var webkitAudio = window.AudioContext || window.webkitAudioContext;
 	var requestStop = false;
+	var currentPlaybackTime = -1;
+	var server = false;
+	if(userId.indexOf('server') !== -1) {
+		server = true;
+	}
 	
 	if (audioElement.mozSetup) {
 		audioElement.mozSetup(2, sampleRate); /* channels, sample rate */
@@ -42,17 +47,42 @@ function AudioPlayer(generator, midiData, opts) {
 		//sampleRate = context.sampleRate;
 
 		var eventCheckTime = 25;
-
 		var start = Date.now(), now;
-		var processTimer = setInterval(function() {
-			now = Date.now();
-			if(generator.processAudioEvents(now-start, eventCheckTime, midiData)) {
-				console.log("All events processed");
-				generator.reset();
-				start = now;
-			}
+		if(server) {
 
-		}, eventCheckTime);
+			var processServerTimer = setInterval(function() {
+				now = Date.now();
+				currentPlaybackTime = now-start;
+				$('#debug').html(currentPlaybackTime);
+				if(generator.processAudioEvents(currentPlaybackTime, eventCheckTime, midiData)) {
+					console.log("All events processed");
+					generator.reset();
+					start = now;
+				}
+
+			}, eventCheckTime);
+		} else {
+			var processClientTimer = setInterval(function() {
+				now = Date.now();
+				if(currentPlaybackTime !== -1) {
+					//DEBUG
+					//console.log("Current playback = ", currentPlaybackTime);
+					currentPlaybackTime += (now - start);
+					start = now;
+					$('#debug').html(currentPlaybackTime);
+					if(generator.processAudioEvents(currentPlaybackTime, eventCheckTime, midiData)) {
+						//DEBUG
+						//console.log("All events processed");
+						generator.reset();
+						start = now;
+						currentPlaybackTime = 0;
+					}
+				} else {
+					start = now;
+				}
+
+			}, eventCheckTime);
+		}
 
 		return {
 			'stop': function() {
@@ -60,7 +90,16 @@ function AudioPlayer(generator, midiData, opts) {
 				node.disconnect();
 				requestStop = true;
 			},
-			'type': 'Webkit Audio'
+			'type': 'Webkit Audio',
+			'getCurrentPlaybackTime' : function() {
+				return currentPlaybackTime;
+			},
+
+			'setCurrentPlaybackTime': function(time) {
+				currentPlaybackTime = time;
+				//DEBUG
+				//$('#debug').html(time);
+			}
 		}
 
 	} else {

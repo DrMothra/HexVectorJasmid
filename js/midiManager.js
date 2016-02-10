@@ -19,13 +19,13 @@ MidiManager.prototype.getInstruments = function() {
     return this.instruments;
 };
 
-MidiManager.prototype.init = function() {
+MidiManager.prototype.init = function(userId) {
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
     this.setupNotes();
     var _this = this;
     this.loadSoundfonts(function() {
         _this.loadAudiofiles(function() {
-            _this.play("audio/Transposed.mid");
+            _this.play("audio/Transposed.mid", userId);
         })
     })
 };
@@ -93,7 +93,7 @@ MidiManager.prototype.loadRemoteFile = function(path, callback) {
     fetch.send();
 };
 
-MidiManager.prototype.play = function(midiFilename) {
+MidiManager.prototype.play = function(midiFilename, userId) {
     //Play the file
     var _this = this;
     this.loadRemoteFile(midiFilename, function(data) {
@@ -109,7 +109,7 @@ MidiManager.prototype.play = function(midiFilename) {
         _this.replayer.setTrackMapping(4, 3);
         _this.replayer.setTrackMapping(5, 4);
         _this.replayer.setTrackMapping(6, 5);
-        this.audio = AudioPlayer(_this.replayer, midiData);
+        _this.audio = AudioPlayer(_this.replayer, midiData, userId);
     })
 };
 
@@ -151,3 +151,16 @@ MidiManager.prototype.setFilterFrequency = function(freq, gain) {
     this.replayer.setFilterFrequency(freq, gain);
 };
 
+MidiManager.prototype.getPlaybackTime = function() {
+    if(this.audio) {
+        return this.audio.getCurrentPlaybackTime();
+    } else {
+        return undefined;
+    }
+};
+
+MidiManager.prototype.setCurrentPlaybackTime = function(time) {
+    if(this.audio) {
+        this.audio.setCurrentPlaybackTime(time);
+    }
+};
