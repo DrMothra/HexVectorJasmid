@@ -53,7 +53,8 @@ function AudioPlayer(generator, midiData, userId, opts) {
 			var processServerTimer = setInterval(function() {
 				now = Date.now();
 				currentPlaybackTime = now-start;
-				$('#debug').html(currentPlaybackTime);
+				//DEBUG
+				//$('#debug').html(currentPlaybackTime);
 				if(generator.processAudioEvents(currentPlaybackTime, eventCheckTime, midiData)) {
 					console.log("All events processed");
 					generator.reset();
@@ -69,7 +70,8 @@ function AudioPlayer(generator, midiData, userId, opts) {
 					//console.log("Current playback = ", currentPlaybackTime);
 					currentPlaybackTime += (now - start);
 					start = now;
-					$('#debug').html(currentPlaybackTime);
+					//DEBUG
+					//$('#debug').html(currentPlaybackTime);
 					if(generator.processAudioEvents(currentPlaybackTime, eventCheckTime, midiData)) {
 						//DEBUG
 						//console.log("All events processed");

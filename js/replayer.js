@@ -157,6 +157,10 @@ function Replayer(midiFile, synth, soundBuffers) {
 			time = obj[1];
 			playbackTime += time;
 			//DEBUG
+			if(counter === 198) {
+				var test = 200;
+			}
+			//DEBUG
 			//console.log("Playback = ", playbackTime);
 			++currentEvent;
 			if(playbackTime < currentTime || event.event.type === 'meta') continue;
@@ -166,7 +170,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 				event.delay = (delay/1000) + delayOffset;
 				eventsToProcess.push(event);
 				//DEBUG
-				//console.log("Delay = ", delay, " currentTime = ", currentTime);
+				//console.log("Note = ", event.event.noteNumber, " msg = ", event.event.subtype);
 			} else {
 				--currentEvent;
 				playbackTime -= time;
@@ -183,7 +187,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 	function reset() {
 		currentEvent = 0;
 		playbackTime = 0;
-		counter = 0;
+		//counter = 0;
 	}
 
 	function handleEvent(eventInfo) {
@@ -207,7 +211,8 @@ function Replayer(midiFile, synth, soundBuffers) {
 
 				switch (event.subtype) {
 					case 'noteOn':
-
+						//DEBUG
+						$('#debug').html(++counter);
                         var velocity = event.velocity;
 
 						if(trackMute[track]) {
@@ -223,7 +228,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 						//	console.log("Note = ", noteNum);
 						//}
 						//DEBUG
-                        //console.log("On = ", noteNum, " delay = ", delay, " velocity = ", velocity);
+                        //console.log("On = ", noteNum, " count = ", ++counter);
 
 						noteId = noteNum.toString();
                         bufferId = instrument + '' + noteId;
@@ -261,7 +266,14 @@ function Replayer(midiFile, synth, soundBuffers) {
 						break;
 					case 'noteOff':
 						//DEBUG
+						$('#debug').html(++counter);
 						break;
+
+						noteNum = event.noteNumber;
+						//DEBUG
+						//console.log("Off = ", noteNum, " count = ", ++counter);
+
+						//break;
                         noteNum = event.noteNumber;
 						//DEBUG
 						//if(++counter < 30) {

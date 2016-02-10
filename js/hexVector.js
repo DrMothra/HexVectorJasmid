@@ -120,7 +120,8 @@ $(document).ready(function() {
     var manager = new MidiManager();
     manager.init(userId);
 
-    var wsUrl = "ws://192.168.0.14";
+    //DEBUG - Don#t connect for now
+    var wsUrl = "ws://10.154.157.1";
     var wsPort = 8887;
     var syncIndex, syncStr = 'Sync', syncTime;
     connectionManager.init(userId);
@@ -140,14 +141,14 @@ $(document).ready(function() {
                 manager.setCurrentPlaybackTime(syncTime);
                 //synced = true;
                 //DEBUG
-                $('#debug').html(syncTime.toString());
+                //$('#debug').html(syncTime.toString());
             }
         }
     });
 
     //DEBUG
     console.log("Stored id ", userId);
-    $('#debug').html(userId);
+    //$('#debug').html(userId);
 
     if(userId === undefined) {
         //DEBUG
@@ -163,7 +164,7 @@ $(document).ready(function() {
             //console.log("Sent sync");
             var time = manager.getPlaybackTime().toString();
             connectionManager.sendMessage("Sync" + time);
-            $('#debug').html(time);
+            //$('#debug').html(time);
         }, syncTime);
     }
 

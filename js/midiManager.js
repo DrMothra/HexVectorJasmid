@@ -9,6 +9,7 @@ var MidiManager = function() {
     this.SAMPLERATE = 44100;
     this.soundFontURL = "./soundfont/";
     this.instruments = ['string_ensemble_1', 'electric_grand_piano', 'synth_strings_1', 'bell_Motif', 'rising_Melody', 'marimba'];
+    //this.instruments = ['acoustic_grand_piano'];
     this.audioContext = null;
     this.audioBuffers = {};
     this.keyToNote = {};
@@ -25,7 +26,7 @@ MidiManager.prototype.init = function(userId) {
     var _this = this;
     this.loadSoundfonts(function() {
         _this.loadAudiofiles(function() {
-            _this.play("audio/Transposed.mid", userId);
+            _this.play("audio/MIDIMaster.mid", userId);
         })
     })
 };
