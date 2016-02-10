@@ -25,7 +25,7 @@ MidiManager.prototype.init = function() {
     var _this = this;
     this.loadSoundfonts(function() {
         _this.loadAudiofiles(function() {
-            _this.play("audio/MIDIMasterv0.2.mid");
+            _this.play("audio/Transposed.mid");
         })
     })
 };
@@ -47,10 +47,10 @@ MidiManager.prototype.loadSoundfonts = function(onLoaded) {
     for(var i=0; i<numRequests; ++i) {
         loadRequest(this.soundFontURL, this.instruments[i], function() {
             //DEBUG
-            console.log("File loaded");
+            console.log("Soundfont ", filesLoaded+1, " loaded");
             if(++filesLoaded === numRequests) {
                 //DEBUG
-                console.log("All files loaded");
+                console.log("All soundfonts loaded");
                 onLoaded();
             }
         })
@@ -103,12 +103,12 @@ MidiManager.prototype.play = function(midiFilename) {
         _this.replayer = Replayer(this.midiFile, this.synth, _this.audioBuffers);
         var midiData = _this.replayer.getData();
         _this.tracksLoaded = true;
-        _this.replayer.setTrackMapping(0, 0);
-        _this.replayer.setTrackMapping(1, 1);
-        _this.replayer.setTrackMapping(2, 2);
-        _this.replayer.setTrackMapping(3, 3);
-        _this.replayer.setTrackMapping(4, 4);
-        _this.replayer.setTrackMapping(5, 5);
+        _this.replayer.setTrackMapping(1, 0);
+        _this.replayer.setTrackMapping(2, 1);
+        _this.replayer.setTrackMapping(3, 2);
+        _this.replayer.setTrackMapping(4, 3);
+        _this.replayer.setTrackMapping(5, 4);
+        _this.replayer.setTrackMapping(6, 5);
         this.audio = AudioPlayer(_this.replayer, midiData);
     })
 };

@@ -190,8 +190,6 @@ function Replayer(midiFile, synth, soundBuffers) {
 		var event = eventInfo.event;
 		var track = eventInfo.track;
 		var delay = eventInfo.delay;
-		//DEBUG
-		//console.log("Delay = ", delay);
 
 		var channel = 0, channelId = 0;
 		var noteNum, noteId, bufferId, buffer, source, gain;
@@ -218,13 +216,15 @@ function Replayer(midiFile, synth, soundBuffers) {
                             //console.log("Track ", track, " muted");
                         }
 
+
                         noteNum = event.noteNumber;
+						//DEBUG
+						//if(track === 2) {
+						//	console.log("Note = ", noteNum);
+						//}
 						//DEBUG
                         //console.log("On = ", noteNum, " delay = ", delay, " velocity = ", velocity);
 
-                        if(noteNum === undefined) {
-                            noteNum = 21;
-                        }
 						noteId = noteNum.toString();
                         bufferId = instrument + '' + noteId;
                         buffer = audioBuffers[bufferId];
@@ -261,15 +261,14 @@ function Replayer(midiFile, synth, soundBuffers) {
 						break;
 					case 'noteOff':
 						//DEBUG
-						//break;
+						break;
                         noteNum = event.noteNumber;
 						//DEBUG
 						//if(++counter < 30) {
 						//	console.log("Off = ", noteNum, " delay = ", delay);
 						//}
 
-						noteId = noteNum.toString();
-                        bufferId = instrument + '' + noteId;
+						noteId = noteNum.toString(); bufferId = instrument + '' + noteId;
                         buffer = audioBuffers[bufferId];
                         if (buffer) {
                             source = sources[channelId + '' + noteId];
@@ -280,7 +279,7 @@ function Replayer(midiFile, synth, soundBuffers) {
                                     // @Miranet: 'the values of 0.2 and 0.3 could of course be used as
                                     // a 'release' parameter for ADSR like time settings.'
                                     // add { 'metadata': { release: 0.3 } } to soundfont files
-                                    var gain = source.gainNode.gain;
+                                    gain = source.gainNode.gain;
                                     gain.linearRampToValueAtTime(gain.value, delay);
                                     gain.linearRampToValueAtTime(-1.0, delay + 0.3);
                                 }

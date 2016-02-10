@@ -57,7 +57,8 @@ function loadAudioFiles(context, notes, instrument, instrumentId, audioBuffers, 
                 buffer.id = key;
                 var noteId = notes[key];
                 audioBuffers[instrumentId + '' + noteId] = buffer;
-                ///
+                //DEBUG
+                //console.log("Instrument = ", instrumentId, " note = ", noteId, " loaded");
                 if (-- bufferPending[instrumentId] === 0) {
                     soundfont.isLoaded = true;
                     waitForEnd(instrument);
@@ -75,7 +76,7 @@ function loadAudioFiles(context, notes, instrument, instrumentId, audioBuffers, 
         requestAudio(soundfont, instrumentId, index, key);
     }
 
-    setTimeout(waitForEnd, 1);
+    setTimeout(waitForEnd, 10);
 }
 
 function loadAudio(ctx, url, onload, onerror) {

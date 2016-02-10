@@ -1,13 +1,14 @@
 /**
  * Created by DrTone on 29/01/2016.
  */
-var STARTING = 0, PLAYING = 1;
+var STARTING = 0, PLAYING = 1, TIMED_OUT = 2;
 var screenManager = (function() {
     var status;
     var continueTime = 10 * 1000;
-    var countdownTime = 5 * 1000;
+    var countdownTime = 1000;
+    var playingTime = 180 * 1000;
+    var waitingTimer, countdownTimer, playingTimer;
     var touched = false;
-    var _this = this;
 
     return {
         init: function() {
@@ -30,33 +31,62 @@ var screenManager = (function() {
             //DEBUG
             console.log("Started waiting...");
 
-            var waitingTimer = setInterval(function() {
-                if(!touched) {
+            waitingTimer = setInterval(function () {
+                if (!touched) {
                     $('#continue').show();
                     clearInterval(waitingTimer);
-                    startCountdown();
+                    screenManager.startCountdown();
                 } else {
                     touched = false;
                 }
             }, continueTime);
+        },
 
-            function startCountdown() {
-                var countdown = 5;
-                var elem = $('#countdown');
+        startPlaying: function() {
+            //DEBUG
+            console.log("Started playing");
+
+            playingTimer = setInterval(function() {
+                //DEBUG
+                console.log("Play timeout");
+                $('#timeUpContainer').show();
+                status = TIMED_OUT;
+                screenManager.stopTimers();
+            }, playingTime);
+        },
+
+        startCountdown: function() {
+            var countdown = 5;
+            var elem = $('#countdown');
+            elem.show();
+            $('#continue').show();
+            elem.html(countdown.toString());
+            countdownTimer = setInterval(function() {
+                //Update clock
+                --countdown;
                 elem.html(countdown.toString());
-                var countdownTimer = setInterval(function() {
-                    //Update clock
-                    --countdown;
-                    elem.html(countdown.toString());
-                    if(countdown <= 0) {
-                        clearInterval(countdownTimer);
-                        $('#continue').hide();
-                        var event = new Event("reset");
-                        document.getElementById('playArea').dispatchEvent(event);
-                        status = STARTING;
-                    }
-                }, 1000);
-            }
+                if(touched) {
+                    //Stop countdown
+                    clearInterval(countdownTimer);
+                    elem.hide();
+                    $('#continue').hide();
+                    touched = false;
+                    screenManager.startWaiting();
+                }
+                if(countdown <= 0) {
+                    clearInterval(countdownTimer);
+                    $('#continue').hide();
+                    var event = new Event("reset");
+                    document.getElementById('playArea').dispatchEvent(event);
+                    status = STARTING;
+                }
+            }, countdownTime);
+        },
+
+        stopTimers: function() {
+            clearInterval(waitingTimer);
+            clearInterval(countdownTimer);
+            clearInterval(playingTimer);
         },
 
         launchIntoFullscreen: function(element) {
@@ -87,6 +117,7 @@ $(document).ready(function() {
     var manager = new MidiManager();
     manager.init();
 
+    /*
     var wsuri = "ws://10.154.157.1:48631";
     var websocket = new WebSocket(wsuri);
     websocket.onopen = function() {
@@ -97,6 +128,7 @@ $(document).ready(function() {
         //DEBUG
         console.log("Received ", evt.data);
     };
+    */
     //DEBUG
     console.log("Stored id ", localStorage.getItem("tabletId"));
 
@@ -107,21 +139,34 @@ $(document).ready(function() {
         if(screenManager.isFullScreen()) {
             $('#logo').hide();
             $('#playArea').show();
+            $('#resetContainer').show();
             screenManager.setStatus(PLAYING);
             screenManager.startWaiting();
+            screenManager.startPlaying();
         } else {
             screenManager.launchIntoFullscreen(document.documentElement); // the whole page
         }
     });
 
-    $('#playArea').on("click", function() {
-        screenManager.touched();
+    $('#resetContainer').on("click", function() {
+        resetApp();
     });
 
     document.getElementById('playArea').addEventListener("reset", function() {
         //DEBUG
         console.log("Received reset");
+        resetApp();
     }, false);
+
+    function resetApp() {
+        screenManager.stopTimers();
+        game.state.states['Pyramid'].resetAll();
+        screenManager.setStatus(STARTING);
+        $('#logo').show();
+        $('#playArea').hide();
+        $('#resetContainer').hide();
+        $('#timeUpContainer').hide();
+    }
 
     var Pyramid = {
         preload: function() {
@@ -231,6 +276,11 @@ $(document).ready(function() {
                 point.y = this.endPoints[i].y;
                 this.endPointsStart.push(point);
             }
+
+            //Update screen manager
+            game.input.onDown.add(function() {
+                screenManager.touched();
+            }, this);
         },
 
         update: function() {
@@ -354,7 +404,7 @@ $(document).ready(function() {
                     point2.y = this.pyramidLines[i+1].y;
                     rot = game.math.angleBetweenPoints(point1, point2) + (Math.PI/2);
                     //DEBUG
-                    console.log("Line = ", lineNumber);
+                    //console.log("Line = ", lineNumber);
                     this.noteLines[lineNumber].rotation = rot;
                     dist = Phaser.Point.distance(point1, point2);
                     this.noteLines[lineNumber].scale.setTo(this.lineXScale, dist/this.lineLength);
@@ -437,9 +487,8 @@ $(document).ready(function() {
             //DEBUG
             //console.log("Delta = ", delta);
 
-            //DEBUG
             var deltaY = pointer.y - this.endPointsStart[pointToMove].y;
-            //DEBUG
+
             if(deltaY < 0) {
                 deltaY = ((deltaY * 6000/200) * -1) + 1000;
                 if(deltaY > 7000) deltaY = 7000;
@@ -447,8 +496,8 @@ $(document).ready(function() {
                 deltaY = 1000 - (deltaY * 820/200);
                 if(deltaY < 180) deltaY = 180;
             }
-
-            console.log("Delta = ", deltaY);
+            //DEBUG
+            //console.log("Delta = ", deltaY);
 
             manager.setPlaybackRate(delta);
             manager.setFilterFrequency(deltaY, 15);
@@ -552,6 +601,17 @@ $(document).ready(function() {
                 this.pyramidToTrack[centrePoint] = undefined;
                 //DEBUG
                 //console.log("Track ", lineToTrack[lineNumber], " muted");
+            }
+        },
+
+        resetAll: function() {
+            //Restore everything
+            this.reset = true;
+            this.updateRequired = true;
+            manager.setPlaybackRate(1);
+            manager.setFilterFrequency(1000, 0);
+            for(var i=0; i<this.noteLines.length; ++i) {
+                this.resetLine(null, i);
             }
         }
     };
