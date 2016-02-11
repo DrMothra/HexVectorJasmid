@@ -25,7 +25,7 @@ var connectionManager = (function() {
             socket = new WebSocket(wsUrl);
             socket.onopen = function() {
                 //DEBUG
-                console.log("Connected");
+                //console.log("Connected");
                 //$('#debug').html("Connected");
 
                 status = CONNECTED;
@@ -33,7 +33,7 @@ var connectionManager = (function() {
 
             socket.onmessage = function(event) {
                 //DEBUG
-                console.log("Received msg = ", event.data);
+                //console.log("Received msg = ", event.data);
                 if(userId.indexOf("server") !== -1) return;
                 if(event.data.indexOf('Sync') !== -1) {
                     callback(event.data);
@@ -42,12 +42,13 @@ var connectionManager = (function() {
 
             socket.onerror = function(event) {
                 //DEBUG
-                console.log("Socket error");
+                //console.log("Socket error");
+                alert("Cannot connect to websocket server");
             };
 
             socket.onclose = function(event) {
                 //DEBUG
-                console.log("Socket closed");
+                //console.log("Socket closed");
             }
         },
 

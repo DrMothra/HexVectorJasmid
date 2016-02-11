@@ -236,7 +236,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 
                         gain = (velocity / 127) * (masterVolume / 127) * 2;
 						if(trackMute[track]) {
-							gain = 0.01;
+							gain = 0.001;
 							//DEBUG
 							//console.log("Track ", track, " muted");
 						}

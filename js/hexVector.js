@@ -4,7 +4,7 @@
 var STARTING = 0, PLAYING = 1, TIMED_OUT = 2;
 var screenManager = (function() {
     var status;
-    var continueTime = 10 * 1000;
+    var continueTime = 30 * 1000;
     var countdownTime = 1000;
     var playingTime = 180 * 1000;
     var waitingTimer, countdownTimer, playingTimer;
@@ -33,6 +33,7 @@ var screenManager = (function() {
 
             waitingTimer = setInterval(function () {
                 if (!touched) {
+                    $('#timeUpContainer').hide();
                     $('#continue').show();
                     clearInterval(waitingTimer);
                     screenManager.startCountdown();
@@ -51,7 +52,7 @@ var screenManager = (function() {
                 console.log("Play timeout");
                 $('#timeUpContainer').show();
                 status = TIMED_OUT;
-                screenManager.stopTimers();
+                clearInterval(playingTimer);
             }, playingTime);
         },
 
@@ -70,12 +71,16 @@ var screenManager = (function() {
                     clearInterval(countdownTimer);
                     elem.hide();
                     $('#continue').hide();
+                    if(status === TIMED_OUT) {
+                        $('#timeUpContainer').show();
+                    }
                     touched = false;
                     screenManager.startWaiting();
                 }
                 if(countdown <= 0) {
                     clearInterval(countdownTimer);
                     $('#continue').hide();
+                    $('#timeUpContainer').hide();
                     var event = new Event("reset");
                     document.getElementById('playArea').dispatchEvent(event);
                     status = STARTING;
@@ -114,6 +119,11 @@ $(document).ready(function() {
     //Get id
     var synced = false;
     var userId = localStorage.getItem("tabletId");
+    if(userId === null) {
+        //Cannot really carry on without user id
+        alert("No user id set!");
+        return;
+    }
     //DEBUG
     console.log("User = ", userId);
     screenManager.init();
@@ -121,7 +131,7 @@ $(document).ready(function() {
     var manager = new MidiManager();
     manager.init(userId, dataLoaded);
 
-    var wsUrl = "ws://192.168.0.14";
+    var wsUrl = "ws://192.168.1.101";
     var wsPort = 8887;
     var syncIndex, syncStr = 'Sync', syncTime;
     connectionManager.init(userId);
@@ -134,10 +144,10 @@ $(document).ready(function() {
             syncTime = parseInt(data);
             if(isNaN(syncTime)) {
                 //DEBUG
-                console.log("Bad sync time!");
+                //console.log("Bad sync time!");
             } else {
                 //DEBUG
-                console.log("Sync time = ", syncTime);
+                //console.log("Sync time = ", syncTime);
                 manager.setCurrentPlaybackTime(syncTime);
                 //synced = true;
                 //DEBUG
@@ -145,16 +155,6 @@ $(document).ready(function() {
             }
         }
     });
-
-    //DEBUG
-    console.log("Stored id ", userId);
-    //$('#debug').html(userId);
-
-    if(userId === undefined) {
-        //Cannot really carry on without user id
-        alert("No user id set!");
-        return;
-    }
 
     //Broadcast time sync
     if(userId.indexOf("server") !== -1) {
@@ -171,7 +171,7 @@ $(document).ready(function() {
         }, syncTime);
     }
 
-    var game = new Phaser.Game(800, 1280, Phaser.AUTO, 'playArea');
+    var game = new Phaser.Game(800, 1280, Phaser.CANVAS, 'playArea');
 
     var allLoaded = false;
     function dataLoaded() {
@@ -306,6 +306,16 @@ $(document).ready(function() {
                 this.endPoints[i].events.onDragStop.add(this.endPointDragStop, this);
                 this.endPoints[i].canDrag = false;
             }
+
+            //Endpoints associated with each line
+            this.tracksToEndpoints = [
+                [0, 1],
+                [1, 2],
+                [2, 3],
+                [3, 0],
+                [0, 2],
+                [1, 3]
+            ];
 
             //Setup points influenced by moving other points
             this.endPoints[0].movePoints = [0, 4];
@@ -624,6 +634,8 @@ $(document).ready(function() {
 
                 this.pyramidToTrack[centrePoint] = lineNumber + 1;
                 this.trackOccupied[centrePoint] = true;
+                //Alter endPoints
+
                 //DEBUG
                 console.log("Pyramid ", centrePoint, " = track ", lineNumber+1);
             }
