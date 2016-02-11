@@ -49,7 +49,6 @@ function AudioPlayer(generator, midiData, userId, opts) {
 		var eventCheckTime = 25;
 		var start = Date.now(), now;
 		if(server) {
-
 			var processServerTimer = setInterval(function() {
 				now = Date.now();
 				currentPlaybackTime = now-start;

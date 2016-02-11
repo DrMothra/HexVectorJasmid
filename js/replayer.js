@@ -212,15 +212,8 @@ function Replayer(midiFile, synth, soundBuffers) {
 				switch (event.subtype) {
 					case 'noteOn':
 						//DEBUG
-						$('#debug').html(++counter);
                         var velocity = event.velocity;
-
-						if(trackMute[track]) {
-                            velocity = 0;
-                            //DEBUG
-                            //console.log("Track ", track, " muted");
-                        }
-
+						//$('#debug').html(velocity);
 
                         noteNum = event.noteNumber;
 						//DEBUG
@@ -242,6 +235,11 @@ function Replayer(midiFile, synth, soundBuffers) {
                         source.buffer = buffer;
 
                         gain = (velocity / 127) * (masterVolume / 127) * 2;
+						if(trackMute[track]) {
+							gain = 0.01;
+							//DEBUG
+							//console.log("Track ", track, " muted");
+						}
 						//source.connect(context.destination);
 						var filter = context.createBiquadFilter();
 						filter.type = "peaking";
@@ -260,13 +258,13 @@ function Replayer(midiFile, synth, soundBuffers) {
 						source.gainNode.gain.value = gain;
 
                         source.start(delay);
-                        channelId = 0;
-                        sources[channelId + '' + noteId] = source;
+                        //channelId = 0;
+                        //sources[channelId + '' + noteId] = source;
 
 						break;
 					case 'noteOff':
 						//DEBUG
-						$('#debug').html(++counter);
+						//$('#debug').html(++counter);
 						break;
 
 						noteNum = event.noteNumber;

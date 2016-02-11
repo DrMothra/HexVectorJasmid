@@ -1,15 +1,13 @@
 /**
  * Created by atg on 09/02/2016.
  */
-
 //Manages midi laoding and playing
 var MidiManager = function() {
     this.replayer = null;
     this.midiFile = null;
     this.SAMPLERATE = 44100;
     this.soundFontURL = "./soundfont/";
-    this.instruments = ['string_ensemble_1', 'electric_grand_piano', 'synth_strings_1', 'bell_Motif', 'rising_Melody', 'marimba'];
-    //this.instruments = ['acoustic_grand_piano'];
+    this.instruments = ['string_ensemble_1', 'electric_grand_piano', 'synth_strings_1', 'bell', 'synth_Melody', 'marimba', 'fatSync', 'polySynth'];
     this.audioContext = null;
     this.audioBuffers = {};
     this.keyToNote = {};
@@ -20,13 +18,20 @@ MidiManager.prototype.getInstruments = function() {
     return this.instruments;
 };
 
-MidiManager.prototype.init = function(userId) {
+MidiManager.prototype.init = function(userId, callback) {
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
     this.setupNotes();
+    if(callback !== undefined) {
+        this.loadedCallback = callback;
+    }
+    this.tabletId = 8;
+    if(userId.indexOf('server') === -1) {
+        this.tabletId = parseInt(userId.charAt(userId.length-1));
+    }
     var _this = this;
     this.loadSoundfonts(function() {
         _this.loadAudiofiles(function() {
-            _this.play("audio/MIDIMaster.mid", userId);
+            _this.play("audio/Digitopia_Tablet" + _this.tabletId + ".mid", userId);
         })
     })
 };
@@ -96,6 +101,7 @@ MidiManager.prototype.loadRemoteFile = function(path, callback) {
 
 MidiManager.prototype.play = function(midiFilename, userId) {
     //Play the file
+    var STRINGS = 0, PIANO = 1, SYNTH_STRING = 2, BELL = 3, MELODY = 4, MARIMBA = 5, FATSYNC = 6, POLY = 7;
     var _this = this;
     this.loadRemoteFile(midiFilename, function(data) {
         $('#loadIndicator').html("Loaded");
@@ -104,12 +110,23 @@ MidiManager.prototype.play = function(midiFilename, userId) {
         _this.replayer = Replayer(this.midiFile, this.synth, _this.audioBuffers);
         var midiData = _this.replayer.getData();
         _this.tracksLoaded = true;
-        _this.replayer.setTrackMapping(1, 0);
-        _this.replayer.setTrackMapping(2, 1);
-        _this.replayer.setTrackMapping(3, 2);
-        _this.replayer.setTrackMapping(4, 3);
-        _this.replayer.setTrackMapping(5, 4);
-        _this.replayer.setTrackMapping(6, 5);
+        var config = [
+            [STRINGS, PIANO, SYNTH_STRING, BELL, MELODY, MARIMBA],
+            [MARIMBA, STRINGS, SYNTH_STRING, MELODY, BELL, PIANO],
+            [PIANO, STRINGS, MELODY, MARIMBA, FATSYNC, POLY],
+            [MELODY, POLY, STRINGS, PIANO, BELL, FATSYNC],
+            [STRINGS, PIANO, SYNTH_STRING, BELL, MELODY, MARIMBA],
+            [MARIMBA, STRINGS, SYNTH_STRING, MELODY, BELL, PIANO],
+            [PIANO, STRINGS, MELODY, MARIMBA, FATSYNC, POLY],
+            [MELODY, POLY, STRINGS, PIANO, BELL, FATSYNC]
+        ];
+        var instrumentArray = config[_this.tabletId-1];
+        for(var i=0; i<instrumentArray.length; ++i) {
+            _this.replayer.setTrackMapping(i+1, instrumentArray[i]);
+        }
+        if(_this.loadedCallback !== undefined) {
+            _this.loadedCallback();
+        }
         _this.audio = AudioPlayer(_this.replayer, midiData, userId);
     })
 };

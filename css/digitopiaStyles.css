@@ -56,3 +56,8 @@ body {
     top: 2%;
     left: 3%;
 }
+#progress {
+    font-size: 3.2vw;
+    bottom: 5%;
+    left: 39%;
+}

@@ -4,7 +4,7 @@
 var STARTING = 0, PLAYING = 1, TIMED_OUT = 2;
 var screenManager = (function() {
     var status;
-    var continueTime = 1000 * 1000;
+    var continueTime = 10 * 1000;
     var countdownTime = 1000;
     var playingTime = 180 * 1000;
     var waitingTimer, countdownTimer, playingTimer;
@@ -111,17 +111,17 @@ var screenManager = (function() {
 })();
 
 $(document).ready(function() {
-
     //Get id
     var synced = false;
     var userId = localStorage.getItem("tabletId");
+    //DEBUG
+    console.log("User = ", userId);
     screenManager.init();
 
     var manager = new MidiManager();
-    manager.init(userId);
+    manager.init(userId, dataLoaded);
 
-    //DEBUG - Don#t connect for now
-    var wsUrl = "ws://10.154.157.1";
+    var wsUrl = "ws://192.168.0.14";
     var wsPort = 8887;
     var syncIndex, syncStr = 'Sync', syncTime;
     connectionManager.init(userId);
@@ -158,27 +158,41 @@ $(document).ready(function() {
     //Broadcast time sync
     if(userId.indexOf("server") !== -1) {
         //This is server - broadcast sync
-        var syncTime = 10 * 1000;
+        syncTime = 10 * 1000;
         var timeSyncTimer = setInterval(function() {
             //DEBUG
             //console.log("Sent sync");
             var time = manager.getPlaybackTime().toString();
-            connectionManager.sendMessage("Sync" + time);
+            if(time !== undefined) {
+                connectionManager.sendMessage("Sync" + time);
+            }
             //$('#debug').html(time);
         }, syncTime);
     }
 
     var game = new Phaser.Game(800, 1280, Phaser.AUTO, 'playArea');
 
+    var allLoaded = false;
+    function dataLoaded() {
+        //DEBUG
+        console.log("Data loaded");
+
+        $('#progress').hide();
+        allLoaded = true;
+    }
+
     $('#logo').on("click", function() {
         //Full screen
         if(screenManager.isFullScreen()) {
-            $('#logo').hide();
-            $('#playArea').show();
-            $('#resetContainer').show();
-            screenManager.setStatus(PLAYING);
-            screenManager.startWaiting();
-            screenManager.startPlaying();
+            if(allLoaded) {
+                $('#logo').hide();
+                $('#progress').hide();
+                $('#playArea').show();
+                $('#resetContainer').show();
+                screenManager.setStatus(PLAYING);
+                screenManager.startWaiting();
+                screenManager.startPlaying();
+            }
         } else {
             screenManager.launchIntoFullscreen(document.documentElement); // the whole page
         }
@@ -511,9 +525,9 @@ $(document).ready(function() {
             var delta = pointer.x - this.endPointsStart[pointToMove].x;
 
             if(delta > 0) {
-                delta /= 15;
-                if(delta < 1) delta = 1;
-                if(delta > 10) delta = 10;
+                delta /= 150;
+                delta += 1;
+                if(delta > 2) delta = 2;
             } else {
                 if(delta < -150) delta = -150;
                 delta /= 150;
@@ -521,7 +535,7 @@ $(document).ready(function() {
                 if(delta < 0.25) delta = 0.25;
             }
             //DEBUG
-            //console.log("Delta = ", delta);
+            console.log("Delta = ", delta);
 
             var deltaY = pointer.y - this.endPointsStart[pointToMove].y;
 
