@@ -151,8 +151,9 @@ $(document).ready(function() {
     //$('#debug').html(userId);
 
     if(userId === undefined) {
-        //DEBUG
-        console.log("No user id!!!!!");
+        //Cannot really carry on without user id
+        alert("No user id set!");
+        return;
     }
 
     //Broadcast time sync
