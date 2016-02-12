@@ -7,7 +7,9 @@ var MidiManager = function() {
     this.midiFile = null;
     this.SAMPLERATE = 44100;
     this.soundFontURL = "./soundfonts/";
-    this.instruments = ['string_ensemble_1', 'electric_grand_piano', 'synth_strings_1', 'bell', 'synth_Melody', 'marimba', 'fatSync', 'polySynth'];
+    this.instruments = ['strings', 'strings_1a', 'strings_1b', 'electric_piano', 'piano_2a', 'piano_2b', 'synth_strings', 'synth_strings_3a',
+            'synth_strings_3b', 'bell', 'synth_Melody', 'synth_Melody_5b', 'marimba', 'fatSync','fatSync_7a','polySynth', 'polySynth_8a', 'short_Strings',
+            'short_SynthMelody','shortFatSync'];
     this.audioContext = null;
     this.audioBuffers = {};
     this.keyToNote = {};
@@ -101,7 +103,9 @@ MidiManager.prototype.loadRemoteFile = function(path, callback) {
 
 MidiManager.prototype.play = function(midiFilename, userId) {
     //Play the file
-    var STRINGS = 0, PIANO = 1, SYNTH_STRING = 2, BELL = 3, MELODY = 4, MARIMBA = 5, FATSYNC = 6, POLY = 7;
+    var STRINGS = 0, STRINGS_1A = 1, STRINGS_1B = 2, PIANO = 3, PIANO_2A = 4, PIANO_2B = 5, SYNTH_STRINGS = 6, SYNTH_STRINGS_3A = 7,
+        SYNTH_STRINGS_3B = 8, BELL = 9, SYNTH_MELODY = 10, SYNTH_MELODY_5B = 11, MARIMBA = 12, FAT_SYNC = 13, FAT_SYNC_7A = 14, POLYSYNTH = 15, POLYSYNTH_8A = 16,
+        SHORT_STRINGS = 17, SHORT_MELODY = 18, SHORT_FAT_SYNC = 19;
     var _this = this;
     this.loadRemoteFile(midiFilename, function(data) {
         $('#loadIndicator').html("Loaded");
@@ -111,14 +115,14 @@ MidiManager.prototype.play = function(midiFilename, userId) {
         var midiData = _this.replayer.getData();
         _this.tracksLoaded = true;
         var config = [
-            [STRINGS, PIANO, SYNTH_STRING, BELL, MELODY, MARIMBA],
-            [MARIMBA, STRINGS, SYNTH_STRING, MELODY, BELL, PIANO],
-            [PIANO, STRINGS, MELODY, MARIMBA, FATSYNC, POLY],
-            [MELODY, POLY, STRINGS, PIANO, BELL, FATSYNC],
-            [STRINGS, PIANO, SYNTH_STRING, BELL, MELODY, MARIMBA],
-            [MARIMBA, STRINGS, SYNTH_STRING, MELODY, BELL, PIANO],
-            [PIANO, STRINGS, MELODY, MARIMBA, FATSYNC, POLY],
-            [MELODY, POLY, STRINGS, PIANO, BELL, FATSYNC]
+            [SHORT_STRINGS, PIANO_2B, SYNTH_STRINGS_3B, BELL, SYNTH_MELODY_5B, MARIMBA],
+            [MARIMBA, STRINGS_1B, SYNTH_STRINGS_3A, SHORT_MELODY, BELL, PIANO_2A],
+            [PIANO_2A, STRINGS_1B, SHORT_MELODY, MARIMBA, FAT_SYNC_7A, POLYSYNTH_8A],
+            [PIANO_2A, POLYSYNTH, STRINGS_1A, PIANO_2A, BELL, SHORT_FAT_SYNC],
+            [SHORT_STRINGS, PIANO_2B, SYNTH_STRINGS_3B, BELL, SYNTH_MELODY_5B, MARIMBA],
+            [MARIMBA, STRINGS_1B, SYNTH_STRINGS_3A, SHORT_MELODY, BELL, PIANO_2A],
+            [PIANO_2A, STRINGS_1B, SHORT_MELODY, MARIMBA, FAT_SYNC_7A, POLYSYNTH_8A],
+            [PIANO_2A, POLYSYNTH, STRINGS_1A, PIANO_2A, BELL, SHORT_FAT_SYNC]
         ];
         var instrumentArray = config[_this.tabletId-1];
         for(var i=0; i<instrumentArray.length; ++i) {
