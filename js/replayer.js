@@ -18,7 +18,6 @@ function Replayer(midiFile, synth, soundBuffers) {
     var sources = {};
 	var webkitAudio = window.AudioContext || window.webkitAudioContext;
 	var context = new webkitAudio();
-	var playbackTime = 0;
 	var playbackRate = 1;
 	var filterFrequency = 1000;
 	var filterGain = 0;
@@ -138,55 +137,62 @@ function Replayer(midiFile, synth, soundBuffers) {
 	}
 	*/
 
-	function processAudioEvents(currentTime, nextTimeInterval, data) {
+	var currentTime = 0, playbackTime = 0.5, lastTime = 0;
+	function processAudioEvents(elapsed, lookAheadInterval, data) {
 		var keepProcessing = true;
 		var delay, event, time, obj, delayOffset = 1;
 		var dataLength = data.length;
-		//DEBUG
-		//if(counter === 0) {
-		//	console.log("Current time = ", currentTime);
-		//	counter = 1;
-		//}
+		var maxLookAheadTime = (lookAheadInterval * 2);
+
+		if((currentTime - elapsed) >= maxLookAheadTime) {
+			//DEBUG
+			//console.log("current = ", currentTime, " elapsed = ", elapsed);
+			return;
+		}
 
 		while(keepProcessing) {
-			if(currentEvent >= dataLength) break;
-			obj = data[currentEvent];
-			//DEBUG
-			//console.log("Current event =", currentEvent);
+			if(currentEvent >= dataLength) {
+				return true;
+			}
+			obj = data[currentEvent++];
+
 			event = obj[0];
 			time = obj[1];
 			playbackTime += time;
-			//DEBUG
-			if(counter === 198) {
-				var test = 200;
+
+			if(playbackTime <= currentTime) {
+				lastTime = playbackTime;
+				continue;
 			}
+			currentTime = playbackTime - lastTime;
+
+			if(event.event.type === 'meta' || event.event.subtype === 'controller') continue;
+
+			delay = currentTime - elapsed;
 			//DEBUG
-			//console.log("Playback = ", playbackTime);
-			++currentEvent;
-			if(playbackTime < currentTime || event.event.type === 'meta') continue;
-			delay = playbackTime - currentTime;
-			if(delay < 0) delay = 0;
-			if(playbackTime >= currentTime && playbackTime <= (currentTime + nextTimeInterval)) {
-				event.delay = (delay/1000) + delayOffset;
-				eventsToProcess.push(event);
-				//DEBUG
-				//console.log("Note = ", event.event.noteNumber, " msg = ", event.event.subtype);
-			} else {
-				--currentEvent;
-				playbackTime -= time;
-				keepProcessing = false;
+			//console.log("Note = ", event.event.noteNumber, " msg = ", event.event.subtype, " time = ", currentTime, counter++);
+			if(delay < 0) {
+				delay = 0;
+			}
+			event.delay = (delay/1000).toFixed(3);
+			eventsToProcess.push(event);
+			if(delay >= (lookAheadInterval * 2)) {
+				break;
 			}
 		}
 		for(var j=0; j<eventsToProcess.length; ++j) {
 			handleEvent(eventsToProcess[j]);
 		}
 		eventsToProcess = [];
-		return (currentEvent >= dataLength);
+
+		return false;
 	}
 
 	function reset() {
 		currentEvent = 0;
-		playbackTime = 0;
+		playbackTime = 0.5;
+		currentTime = 0;
+		lastTime = 0;
 		//counter = 0;
 	}
 
@@ -216,12 +222,13 @@ function Replayer(midiFile, synth, soundBuffers) {
 						//$('#debug').html(velocity);
 
                         noteNum = event.noteNumber;
+						//$('#debug').html(noteNum + " + " + delay);
 						//DEBUG
 						//if(track === 2) {
 						//	console.log("Note = ", noteNum);
 						//}
 						//DEBUG
-                        //console.log("On = ", noteNum, " count = ", ++counter);
+                        //console.log("On = ", noteNum);
 
 						noteId = noteNum.toString();
                         bufferId = instrument + '' + noteId;
@@ -234,7 +241,7 @@ function Replayer(midiFile, synth, soundBuffers) {
                         source = context.createBufferSource();
                         source.buffer = buffer;
 
-                        gain = (velocity / 127) * (masterVolume / 127) * 2;
+                        gain = (velocity / masterVolume) * 2;
 						if(trackMute[track]) {
 							gain = 0.001;
 							//DEBUG
@@ -264,19 +271,11 @@ function Replayer(midiFile, synth, soundBuffers) {
 						break;
 					case 'noteOff':
 						//DEBUG
-						//$('#debug').html(++counter);
-						break;
+						//break;
 
 						noteNum = event.noteNumber;
 						//DEBUG
 						//console.log("Off = ", noteNum, " count = ", ++counter);
-
-						//break;
-                        noteNum = event.noteNumber;
-						//DEBUG
-						//if(++counter < 30) {
-						//	console.log("Off = ", noteNum, " delay = ", delay);
-						//}
 
 						noteId = noteNum.toString(); bufferId = instrument + '' + noteId;
                         buffer = audioBuffers[bufferId];
@@ -309,6 +308,9 @@ function Replayer(midiFile, synth, soundBuffers) {
 						break;
 					case 'programChange':
 						console.log('program change to ' + event.programNumber);
+						break;
+
+					default:
 						break;
 				}
 				break;

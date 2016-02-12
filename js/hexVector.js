@@ -316,6 +316,8 @@ $(document).ready(function() {
                 [0, 2],
                 [1, 3]
             ];
+            this.selectColour = 0x0000ff;
+            this.defaultColour = 0xffffff;
 
             //Setup points influenced by moving other points
             this.endPoints[0].movePoints = [0, 4];
@@ -546,7 +548,7 @@ $(document).ready(function() {
                 if(delta < 0.25) delta = 0.25;
             }
             //DEBUG
-            console.log("Delta = ", delta);
+            //console.log("Delta = ", delta);
 
             var deltaY = pointer.y - this.endPointsStart[pointToMove].y;
 
@@ -634,8 +636,10 @@ $(document).ready(function() {
 
                 this.pyramidToTrack[centrePoint] = lineNumber + 1;
                 this.trackOccupied[centrePoint] = true;
-                //Alter endPoints
 
+                //Colour endPoints
+                this.resetPoints();
+                this.selectPoints();
                 //DEBUG
                 console.log("Pyramid ", centrePoint, " = track ", lineNumber+1);
             }
@@ -664,6 +668,27 @@ $(document).ready(function() {
                 this.pyramidToTrack[centrePoint] = undefined;
                 //DEBUG
                 //console.log("Track ", lineToTrack[lineNumber], " muted");
+            }
+            this.resetPoints();
+            this.selectPoints();
+        },
+
+        selectPoints: function() {
+            var points;
+            for(var i=0; i<this.trackOccupied.length; ++i) {
+                if(this.trackOccupied[i]) {
+                    points = this.tracksToEndpoints[i];
+                    for(var j=0; j<points.length; ++j) {
+                        this.endPoints[points[j]].tint = this.selectColour;
+                    }
+                }
+            }
+        },
+
+        resetPoints: function() {
+            //Set all points to not selected
+            for(var i=0; i<this.endPoints.length; ++i) {
+                this.endPoints[i].tint = this.defaultColour;
             }
         },
 

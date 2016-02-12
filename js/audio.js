@@ -46,42 +46,39 @@ function AudioPlayer(generator, midiData, userId, opts) {
 		//var context = new webkitAudio();
 		//sampleRate = context.sampleRate;
 
-		var eventCheckTime = 25;
-		var start = Date.now(), now;
+		var eventCheckTime = 50;
+		var lookAhead = 50;
+		var start, now;
+		var first = true;
 		if(server) {
 			var processServerTimer = setInterval(function() {
-				now = Date.now();
-				currentPlaybackTime = now-start;
-				//DEBUG
-				//$('#debug').html(currentPlaybackTime);
-				if(generator.processAudioEvents(currentPlaybackTime, eventCheckTime, midiData)) {
+				if(first) {
+					start = Date.now();
+					now = start;
+					first = false;
+				} else {
+					now = Date.now();
+				}
+				if(generator.processAudioEvents(now-start, lookAhead, midiData)) {
 					console.log("All events processed");
 					generator.reset();
 					start = now;
 				}
-
 			}, eventCheckTime);
 		} else {
 			var processClientTimer = setInterval(function() {
-				now = Date.now();
-				if(currentPlaybackTime !== -1) {
-					//DEBUG
-					//console.log("Current playback = ", currentPlaybackTime);
-					currentPlaybackTime += (now - start);
-					start = now;
-					//DEBUG
-					//$('#debug').html(currentPlaybackTime);
-					if(generator.processAudioEvents(currentPlaybackTime, eventCheckTime, midiData)) {
-						//DEBUG
-						//console.log("All events processed");
-						generator.reset();
-						start = now;
-						currentPlaybackTime = 0;
-					}
+				if(first) {
+					start = Date.now();
+					now = start;
+					first = false;
 				} else {
+					now = Date.now();
+				}
+				if(generator.processAudioEvents(now-start, lookAhead, midiData)) {
+					console.log("All events processed");
+					generator.reset();
 					start = now;
 				}
-
 			}, eventCheckTime);
 		}
 
