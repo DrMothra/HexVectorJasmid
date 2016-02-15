@@ -53,15 +53,18 @@ var screenManager = (function() {
                 $('#timeUpContainer').show();
                 status = TIMED_OUT;
                 clearInterval(playingTimer);
+                screenManager.startCountdown();
             }, playingTime);
         },
 
         startCountdown: function() {
             var countdown = 5;
-            var elem = $('#countdown');
-            elem.show();
-            $('#continue').show();
-            elem.html(countdown.toString());
+            if(status !== TIMED_OUT) {
+                var elem = $('#countdown');
+                elem.show();
+                $('#continue').show();
+                elem.html(countdown.toString());
+            }
             countdownTimer = setInterval(function() {
                 //Update clock
                 --countdown;
@@ -71,9 +74,7 @@ var screenManager = (function() {
                     clearInterval(countdownTimer);
                     elem.hide();
                     $('#continue').hide();
-                    if(status === TIMED_OUT) {
-                        $('#timeUpContainer').show();
-                    }
+                    $('#timeUpContainer').hide();
                     touched = false;
                     screenManager.startWaiting();
                 }
@@ -131,6 +132,8 @@ $(document).ready(function() {
     var manager = new MidiManager();
     manager.init(userId, dataLoaded);
 
+    //DON'T CONNECT TO WEBSOCKET SERVER FOR NOW
+    /*
     var wsUrl = "ws://192.168.1.101";
     var wsPort = 8887;
     var syncIndex, syncStr = 'Sync', syncTime;
@@ -170,6 +173,7 @@ $(document).ready(function() {
             //$('#debug').html(time);
         }, syncTime);
     }
+    */
 
     var game = new Phaser.Game(800, 1280, Phaser.CANVAS, 'playArea');
 
@@ -239,11 +243,11 @@ $(document).ready(function() {
             this.pyramidStartLines = [];
             this.pyramidLines = [
                 {x: 230, y: 310},
-                {x: 430, y: 240},
-                {x: 555, y: 475},
+                {x: 370, y: 250},
+                {x: 555, y: 435},
                 {x: 230, y: 600},
                 {x: 230, y: 310},
-                {x: 555, y: 475}
+                {x: 555, y: 435}
             ];
             var lineSegment;
             for(i=0; i<this.pyramidLines.length; ++i) {
@@ -269,7 +273,9 @@ $(document).ready(function() {
             //Background elements first
             // Draw pyramid
             this.lineWidth = 3;
-            this.lineColour = 0x868686;
+            this.foreGround = 0xc6c6c6;
+            this.backGround = 0x868686;
+            this.lineColour = this.foreGround;
             this.drawPyramid();
 
             this.musicGroup = game.add.group();
@@ -387,14 +393,21 @@ $(document).ready(function() {
                 }
             }
             var numLines = this.pyramidLines.length;
+            this.lineColour = this.backGround;
             this.graphics.lineStyle(this.lineWidth, this.lineColour, 1);
-            this.graphics.moveTo(this.pyramidLines[0].x, this.pyramidLines[0].y);
-            for (i = 1; i < numLines; ++i) {
+            this.graphics.moveTo(this.pyramidLines[2].x, this.pyramidLines[2].y);
+            for(i=3; i<numLines; ++i) {
                 this.graphics.lineTo(this.pyramidLines[i].x, this.pyramidLines[i].y);
             }
 
-            this.graphics.moveTo(this.pyramidLines[1].x, this.pyramidLines[1].y);
+            this.lineColour = this.foreGround;
+            this.graphics.lineStyle(this.lineWidth+2, this.lineColour, 1);
+            this.graphics.moveTo(this.pyramidLines[0].x, this.pyramidLines[0].y);
+            this.graphics.lineTo(this.pyramidLines[1].x, this.pyramidLines[1].y);
             this.graphics.lineTo(this.pyramidLines[3].x, this.pyramidLines[3].y);
+            this.graphics.moveTo(this.pyramidLines[1].x, this.pyramidLines[1].y);
+            this.graphics.lineTo(this.pyramidLines[2].x, this.pyramidLines[2].y);
+
         },
 
         calculateLineProperties: function() {
