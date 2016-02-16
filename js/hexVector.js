@@ -60,19 +60,20 @@ var screenManager = (function() {
         startCountdown: function() {
             var countdown = 5;
             if(status !== TIMED_OUT) {
-                var elem = $('#countdown');
-                elem.show();
+                $('#countdown').show();
                 $('#continue').show();
-                elem.html(countdown.toString());
+                $('#countdown').html(countdown.toString());
             }
             countdownTimer = setInterval(function() {
                 //Update clock
                 --countdown;
-                elem.html(countdown.toString());
+                if(status !== TIMED_OUT) {
+                    $('#countdown').html(countdown.toString());
+                }
                 if(touched) {
                     //Stop countdown
                     clearInterval(countdownTimer);
-                    elem.hide();
+                    $('#countdown').hide();
                     $('#continue').hide();
                     $('#timeUpContainer').hide();
                     touched = false;
@@ -186,6 +187,18 @@ $(document).ready(function() {
         allLoaded = true;
     }
 
+    $("img").on("contextmenu",function(){
+        return false;
+    });
+
+    $("#playArea").on("contextmenu",function(){
+        return false;
+    });
+
+    $("#resetContainer").on("contextmenu",function(){
+        return false;
+    });
+
     $('#logo').on("click", function() {
         //Full screen
         if(screenManager.isFullScreen()) {
@@ -221,15 +234,20 @@ $(document).ready(function() {
         $('#playArea').hide();
         $('#resetContainer').hide();
         $('#timeUpContainer').hide();
+        $('#continue').hide();
+        $('#countdown').hide();
     }
 
     var Pyramid = {
         preload: function() {
             game.load.image('vector', 'assets/vectorHex.png');
             game.load.image('endPoint', 'assets/whiteCircle.png');
+            game.load.audio('drop', 'audio/Digitopia_stinger.mp3');
         },
 
         create: function() {
+            //Sounds
+            this.dropSound = game.add.audio('drop');
             //Draw background first
             var i;
             var numNotes = 6;
@@ -653,6 +671,9 @@ $(document).ready(function() {
                 //Colour endPoints
                 this.resetPoints();
                 this.selectPoints();
+
+                //Indicate line snapped
+                this.dropSound.play();
                 //DEBUG
                 console.log("Pyramid ", centrePoint, " = track ", lineNumber+1);
             }
