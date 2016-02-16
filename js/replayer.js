@@ -154,6 +154,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 			if(currentEvent >= dataLength) {
 				return true;
 			}
+
 			obj = data[currentEvent++];
 
 			event = obj[0];
@@ -175,8 +176,7 @@ function Replayer(midiFile, synth, soundBuffers) {
 				delay = 0;
 			}
 			event.delay = (delay/1000).toFixed(3);
-			//DEBUG
-			$('#debugInfo').html(event.delay);
+
 			eventsToProcess.push(event);
 			if(delay >= (lookAheadInterval * 2)) {
 				break;

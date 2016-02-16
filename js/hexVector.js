@@ -183,7 +183,7 @@ $(document).ready(function() {
         //DEBUG
         console.log("Data loaded");
 
-        $('#progress').hide();
+        $('#progress').html("Touch screen to start...")
         allLoaded = true;
     }
 
@@ -195,7 +195,8 @@ $(document).ready(function() {
         return false;
     });
 
-    $("#resetContainer").on("contextmenu",function(){
+    var resetElem = $("#resetContainer");
+    resetElem.on("contextmenu",function(){
         return false;
     });
 
@@ -216,7 +217,7 @@ $(document).ready(function() {
         }
     });
 
-    $('#resetContainer').on("click", function() {
+    resetElem.on("click", function() {
         resetApp();
     });
 
@@ -231,6 +232,7 @@ $(document).ready(function() {
         game.state.states['Pyramid'].resetAll();
         screenManager.setStatus(STARTING);
         $('#logo').show();
+        $('#progress').show();
         $('#playArea').hide();
         $('#resetContainer').hide();
         $('#timeUpContainer').hide();
