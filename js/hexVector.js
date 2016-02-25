@@ -244,12 +244,9 @@ $(document).ready(function() {
         preload: function() {
             game.load.image('vector', 'assets/vectorHex.png');
             game.load.image('endPoint', 'assets/whiteCircle.png');
-            game.load.audio('drop', 'audio/Digitopia_stinger.mp3');
         },
 
         create: function() {
-            //Sounds
-            this.dropSound = game.add.audio('drop');
             //Draw background first
             var i;
             var numNotes = 6;
@@ -264,10 +261,10 @@ $(document).ready(function() {
             this.pyramidLines = [
                 {x: 230, y: 310},
                 {x: 370, y: 250},
-                {x: 555, y: 435},
+                {x: 500, y: 435},
                 {x: 230, y: 600},
                 {x: 230, y: 310},
-                {x: 555, y: 435}
+                {x: 500, y: 435}
             ];
             var lineSegment;
             for(i=0; i<this.pyramidLines.length; ++i) {
@@ -616,8 +613,11 @@ $(document).ready(function() {
                 tempPoint.setTo(this.shapeCentres[i].x, this.shapeCentres[i].y);
                 tempDist = Phaser.Point.distance(pointer, tempPoint);
                 if(tempDist < minDist) {
-                    minDist = tempDist;
-                    centrePoint = i;
+                    //Want next unoccupied line
+                    if(!this.trackOccupied[i]) {
+                        minDist = tempDist;
+                        centrePoint = i;
+                    }
                 }
             }
 
@@ -674,8 +674,6 @@ $(document).ready(function() {
                 this.resetPoints();
                 this.selectPoints();
 
-                //Indicate line snapped
-                this.dropSound.play();
                 //DEBUG
                 console.log("Pyramid ", centrePoint, " = track ", lineNumber+1);
             }
