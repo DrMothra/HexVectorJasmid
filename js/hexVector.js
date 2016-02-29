@@ -7,7 +7,7 @@ var screenManager = (function() {
     var continueTime = 30 * 1000;
     var countdownTime = 1000;
     var playingTime = 180 * 1000;
-    var waitingTimer, countdownTimer, playingTimer;
+    var waitingTimer = null, countdownTimer = null, playingTimer = null;
     var touched = false;
 
     return {
@@ -33,9 +33,11 @@ var screenManager = (function() {
 
             waitingTimer = setInterval(function () {
                 if (!touched) {
+                    clearInterval(waitingTimer);
+                    waitingTimer = null;
+                    if(countdownTimer !== null) return;
                     $('#timeUpContainer').hide();
                     $('#continue').show();
-                    clearInterval(waitingTimer);
                     screenManager.startCountdown();
                 } else {
                     touched = false;
@@ -53,6 +55,8 @@ var screenManager = (function() {
                 $('#timeUpContainer').show();
                 status = TIMED_OUT;
                 clearInterval(playingTimer);
+                playingTimer = null;
+                if(countdownTimer !== null) return;
                 screenManager.startCountdown();
             }, playingTime);
         },
@@ -63,6 +67,8 @@ var screenManager = (function() {
                 $('#countdown').show();
                 $('#continue').show();
                 $('#countdown').html(countdown.toString());
+            } else {
+                $('#timeUpContainer').show();
             }
             countdownTimer = setInterval(function() {
                 //Update clock
@@ -73,6 +79,7 @@ var screenManager = (function() {
                 if(touched) {
                     //Stop countdown
                     clearInterval(countdownTimer);
+                    countdownTimer = null;
                     $('#countdown').hide();
                     $('#continue').hide();
                     $('#timeUpContainer').hide();
@@ -81,6 +88,7 @@ var screenManager = (function() {
                 }
                 if(countdown <= 0) {
                     clearInterval(countdownTimer);
+                    countdownTimer = null;
                     $('#continue').hide();
                     $('#timeUpContainer').hide();
                     var event = new Event("reset");
@@ -94,6 +102,7 @@ var screenManager = (function() {
             clearInterval(waitingTimer);
             clearInterval(countdownTimer);
             clearInterval(playingTimer);
+            waitingTimer = countdownTimer = playingTimer = null;
         },
 
         launchIntoFullscreen: function(element) {
