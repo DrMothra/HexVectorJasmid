@@ -16,10 +16,13 @@
 .centred {
     text-align: center;
 }
+.autoCentre {
+    margin: 0 auto;
+}
 #continue {
-    font-size: 3.8vw;
-    top: 3%;
-    left: 28%;
+    font-size: 2.3vw;
+    top: 2%;
+    left: 35%;
 }
 #loadIndicator {
     top: 5%;
@@ -35,6 +38,20 @@ body {
 }
 #playArea {
     background: black;
+}
+#playArea canvas {
+    margin: 0 auto;
+}
+#leftBlock,
+#rightBlock {
+    background: #404040;
+    bottom: 0;
+}
+#leftBlock {
+    left: 0;
+}
+#rightBlock {
+    right: 0;
 }
 .hide {
     display: none;

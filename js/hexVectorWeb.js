@@ -185,14 +185,12 @@ $(document).ready(function() {
     }
     */
 
-    var game = new Phaser.Game("100%", "100%", Phaser.CANVAS, 'playArea');
-
     var allLoaded = false;
     function dataLoaded() {
         //DEBUG
         console.log("Data loaded");
 
-        $('#progress').html("Touch screen to start...")
+        $('#progress').html("Click to start...");
         allLoaded = true;
     }
 
@@ -209,20 +207,21 @@ $(document).ready(function() {
         return false;
     });
 
+    var gameHeight = window.innerHeight;
+    var gameWidth = gameHeight * 5 / 8;
+    var baseHeight = 0.25;
+    var blockHeight = gameHeight * baseHeight;
+    var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.CANVAS, 'playArea');
     $('#logo').on("click", function() {
         //Full screen
-        if(screenManager.isFullScreen()) {
-            if(allLoaded) {
-                $('#logo').hide();
-                $('#progress').hide();
-                $('#playArea').show();
-                $('#resetContainer').show();
-                screenManager.setStatus(PLAYING);
-                screenManager.startWaiting();
-                screenManager.startPlaying();
-            }
-        } else {
-            screenManager.launchIntoFullscreen(document.documentElement); // the whole page
+        if(allLoaded) {
+            $('#logo').hide();
+            $('#progress').hide();
+            $('#playArea').show();
+            $('#resetContainer').show();
+            screenManager.setStatus(PLAYING);
+            screenManager.startWaiting();
+            screenManager.startPlaying();
         }
     });
 
@@ -259,28 +258,29 @@ $(document).ready(function() {
             //Draw background first
             var i;
             var numNotes = 6;
-            this.indent = 0.3 * window.innerWidth;
-            this.originYOffset = 0.15 * window.innerHeight;
+            this.indent = (0.15 * gameWidth) + window.innerWidth*0.3;
+            this.originYOffset = 0.125 * gameHeight;
+            this.baseStart = 0.75;
             this.updateRequired = false;
             this.pyramidToTrack = [undefined, undefined, undefined, undefined, undefined, undefined];
             this.reset = true;
             this.lineLength = 484;
             this.pyramidStartLines = [];
             this.pyramidLinesPercent = [
-                {x: 0.300, y: 0.230},
-                {x: 0.475, y: 0.158},
-                {x: 0.613, y: 0.388},
-                {x: 0.300, y: 0.588},
-                {x: 0.300, y: 0.230},
-                {x: 0.613, y: 0.388}
+                {x: 0.184, y: 0.313},
+                {x: 0.524, y: 0.242},
+                {x: 0.850, y: 0.460},
+                {x: 0.184, y: 0.653},
+                {x: 0.184, y: 0.313},
+                {x: 0.850, y: 0.460}
             ];
             //Calculate pyramidLines from percentages
             this.pyramidLines = [];
             var pointObj;
             for(i=0; i<this.pyramidLinesPercent.length; ++i) {
                 pointObj = {};
-                pointObj.x = this.pyramidLinesPercent[i].x * window.innerWidth;
-                pointObj.y = this.pyramidLinesPercent[i].y * window.innerHeight;
+                pointObj.x = (this.pyramidLinesPercent[i].x * gameWidth) + window.innerWidth*0.3;
+                pointObj.y = this.pyramidLinesPercent[i].y * gameHeight;
                 this.pyramidLines.push(pointObj);
             }
             var lineSegment;
@@ -400,7 +400,7 @@ $(document).ready(function() {
         drawBase: function() {
             this.base.lineStyle(0);
             this.base.beginFill(0x404040, 1.0);
-            this.base.drawRect(0, 0.7 * window.innerHeight, window.innerWidth, 0.3 * window.innerHeight);
+            this.base.drawRect(0, this.baseStart * window.innerHeight, window.innerWidth, baseHeight * window.innerHeight);
             this.base.endFill();
         },
 
@@ -758,4 +758,5 @@ $(document).ready(function() {
 
     game.state.add("Pyramid", Pyramid);
     game.state.start("Pyramid");
+
 });
