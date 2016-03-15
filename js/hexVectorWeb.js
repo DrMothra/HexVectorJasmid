@@ -185,7 +185,7 @@ $(document).ready(function() {
     }
     */
 
-    var game = new Phaser.Game(800, 1280, Phaser.CANVAS, 'playArea');
+    var game = new Phaser.Game("100%", "100%", Phaser.CANVAS, 'playArea');
 
     var allLoaded = false;
     function dataLoaded() {
@@ -259,22 +259,30 @@ $(document).ready(function() {
             //Draw background first
             var i;
             var numNotes = 6;
-            this.lineSpacing = 64;
-            this.indent = 175;
-            this.originYOffset = 200;
+            this.indent = 0.3 * window.innerWidth;
+            this.originYOffset = 0.15 * window.innerHeight;
             this.updateRequired = false;
             this.pyramidToTrack = [undefined, undefined, undefined, undefined, undefined, undefined];
             this.reset = true;
             this.lineLength = 484;
             this.pyramidStartLines = [];
-            this.pyramidLines = [
-                {x: 230, y: 310},
-                {x: 370, y: 250},
-                {x: 500, y: 435},
-                {x: 230, y: 600},
-                {x: 230, y: 310},
-                {x: 500, y: 435}
+            this.pyramidLinesPercent = [
+                {x: 0.300, y: 0.230},
+                {x: 0.475, y: 0.158},
+                {x: 0.613, y: 0.388},
+                {x: 0.300, y: 0.588},
+                {x: 0.300, y: 0.230},
+                {x: 0.613, y: 0.388}
             ];
+            //Calculate pyramidLines from percentages
+            this.pyramidLines = [];
+            var pointObj;
+            for(i=0; i<this.pyramidLinesPercent.length; ++i) {
+                pointObj = {};
+                pointObj.x = this.pyramidLinesPercent[i].x * window.innerWidth;
+                pointObj.y = this.pyramidLinesPercent[i].y * window.innerHeight;
+                this.pyramidLines.push(pointObj);
+            }
             var lineSegment;
             for(i=0; i<this.pyramidLines.length; ++i) {
                 lineSegment = {};
@@ -282,7 +290,7 @@ $(document).ready(function() {
                 lineSegment.y = this.pyramidLines[i].y;
                 this.pyramidStartLines.push(lineSegment);
             }
-
+            this.lineSpacing = (this.pyramidLines[2].x - this.pyramidLines[0].x) / 5;
             this.noteLines = [];
             this.endPoints = [];
             this.endPointsStart = [];
@@ -311,9 +319,9 @@ $(document).ready(function() {
 
             //Lines that trigger tracks
             this.lineXScale = 0.25;
-            this.lineYScale = 0.4;
+            this.lineYScale = 0.3;
             for(i=0; i<numNotes; ++i) {
-                this.noteLines.push(game.add.sprite((this.lineSpacing*(i+1)) + this.indent, game.world.height - this.originYOffset, 'vector'));
+                this.noteLines.push(game.add.sprite((this.lineSpacing*i) + this.indent, game.world.height - this.originYOffset, 'vector'));
                 this.noteLines[i].lineNumber = i;
                 this.noteLines[i].anchor.x = 0.5;
                 this.noteLines[i].anchor.y = 0.5;
@@ -392,7 +400,7 @@ $(document).ready(function() {
         drawBase: function() {
             this.base.lineStyle(0);
             this.base.beginFill(0x404040, 1.0);
-            this.base.drawRect(0, 900, 800, 400);
+            this.base.drawRect(0, 0.7 * window.innerHeight, window.innerWidth, 0.3 * window.innerHeight);
             this.base.endFill();
         },
 
@@ -692,7 +700,7 @@ $(document).ready(function() {
         resetLine: function(pointer, lineNumber) {
             var line = this.noteLines[lineNumber];
 
-            line.x = (this.lineSpacing * (lineNumber+1)) + this.indent;
+            line.x = (this.lineSpacing * lineNumber) + this.indent;
             line.y = game.world.height - this.originYOffset;
             line.scale.y = this.lineYScale;
             line.rotation = 0;

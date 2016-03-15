@@ -1,0 +1,64 @@
+/* Styles for Digitopia project */
+
+.hover {
+    position: absolute;
+    font-size: 1.4vw;
+    color: white;
+}
+.hoverInstruct {
+    position: absolute;
+    font-family: Arial;
+    color: white;
+    -webkit-text-fill-color: rgba(0,0,0,0);
+    -webkit-text-stroke-width: 1px;
+    -webkit-text-stroke-color: white;
+}
+.centred {
+    text-align: center;
+}
+#continue {
+    font-size: 3.8vw;
+    top: 3%;
+    left: 28%;
+}
+#loadIndicator {
+    top: 5%;
+    left: 5%;
+}
+body {
+    background: #000;
+    margin: 0;
+}
+#logo img {
+    width: 100%;
+    height: 100vh;
+}
+#playArea {
+    background: black;
+}
+.hide {
+    display: none;
+}
+#resetContainer {
+    bottom: 0.5%;
+    left:3%;
+}
+#resetContainer p {
+    margin: 0;
+    font-size: 4.8vw;
+}
+#timeUpContainer {
+    font-size: 3.8vw;
+    top: 3%;
+    left: 15%;
+}
+#debugInfo {
+    font-size: 3.8vw;
+    bottom: 2%;
+    right: 3%;
+}
+#progress {
+    font-size: 3.2vw;
+    bottom: 5%;
+    left: 39%;
+}
