@@ -7,8 +7,9 @@ var screenManager = (function() {
     var continueTime = 30 * 1000;
     var countdownTime = 1000;
     var playingTime = 180 * 1000;
-    var waitingTimer = null, countdownTimer = null, playingTimer = null;
+    var waitingTimer = null, countdownTimer = null;
     var touched = false;
+    var startTime, elapsed;
 
     return {
         init: function() {
@@ -17,6 +18,9 @@ var screenManager = (function() {
 
         setStatus: function(state) {
             status = state;
+            if(status === PLAYING) {
+                startTime = Date.now();
+            }
         },
 
         getStatus: function() {
@@ -32,33 +36,22 @@ var screenManager = (function() {
             console.log("Started waiting...");
 
             waitingTimer = setInterval(function () {
-                if (!touched) {
+                elapsed = Date.now() - startTime;
+                if(elapsed >= playingTime) {
+                    status = TIMED_OUT;
                     clearInterval(waitingTimer);
-                    waitingTimer = null;
-                    if(countdownTimer !== null) return;
-                    $('#timeUpContainer').hide();
-                    $('#continue').show();
                     screenManager.startCountdown();
                 } else {
-                    touched = false;
+                    if (!touched) {
+                        clearInterval(waitingTimer);
+                        waitingTimer = null;
+                        $('#continue').show();
+                        screenManager.startCountdown();
+                    } else {
+                        touched = false;
+                    }
                 }
             }, continueTime);
-        },
-
-        startPlaying: function() {
-            //DEBUG
-            console.log("Started playing");
-
-            playingTimer = setInterval(function() {
-                //DEBUG
-                console.log("Play timeout");
-                $('#timeUpContainer').show();
-                status = TIMED_OUT;
-                clearInterval(playingTimer);
-                playingTimer = null;
-                if(countdownTimer !== null) return;
-                screenManager.startCountdown();
-            }, playingTime);
         },
 
         startCountdown: function() {
@@ -85,6 +78,7 @@ var screenManager = (function() {
                     $('#timeUpContainer').hide();
                     touched = false;
                     screenManager.startWaiting();
+                    return;
                 }
                 if(countdown <= 0) {
                     clearInterval(countdownTimer);
@@ -101,8 +95,7 @@ var screenManager = (function() {
         stopTimers: function() {
             clearInterval(waitingTimer);
             clearInterval(countdownTimer);
-            clearInterval(playingTimer);
-            waitingTimer = countdownTimer = playingTimer = null;
+            waitingTimer = countdownTimer = null;
         },
 
         launchIntoFullscreen: function(element) {
@@ -221,7 +214,6 @@ $(document).ready(function() {
             $('#resetContainer').show();
             screenManager.setStatus(PLAYING);
             screenManager.startWaiting();
-            screenManager.startPlaying();
         }
     });
 
