@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>Digitopia</title>
+
+    <link href="./css/digitopiaStylesWeb.css" rel="stylesheet" type="text/css" />
+
+    <script type="text/javascript" src="js/Base64.js"></script>
+    <script type="text/javascript" src="js/Base64binary.js"></script>
+    <script type="text/javascript" src="js/stream.js"></script>
+    <script type="text/javascript" src="js/midifile.js"></script>
+    <script type="text/javascript" src="js/replayer.js?v=0.3"></script>
+    <script type="text/javascript" src="js/synth.js?v=0.1"></script>
+    <script type="text/javascript" src="js/audio.js?v=0.2"></script>
+    <script type="text/javascript" src="js/loader.js?v=0.1"></script>
+
+    <script type="text/javascript" src="js/jquery-1.11.2.min.js"></script>
+
+    <script src="js/phaser.js"></script>
+
+    <script type="text/javascript" src="js/connectionManager.js?v=0.1"></script>
+    <script type="text/javascript" src="js/midiManager.js?v=0.3"></script>
+    <script type="text/javascript" src="js/hexVectorWeb.js?v=0.5"></script>
+
+</head>
+<body>
+
+<div id="logo">
+    <img src="assets/startScreen.png">
+</div>
+
+<div id="playArea" class="hide">
+
+</div>
+
+<div id="continue" class="hoverInstruct hide">
+    <p>I WOULD LIKE TO CONTINUE</p>
+    <p id="countdown" class="centred"></p>
+</div>
+
+<div id="resetContainer" class="hoverInstruct hide">
+    <p id="reset">RESET</p>
+</div>
+
+<div id="timeUpContainer" class="hoverInstruct hide">
+    <p id="timeUp">YOUR 3 MINUTES ARE UP - CONTINUE?</p>
+</div>
+
+<div id="progress" class="hoverInstruct">
+    <p id="wait">Please wait...</p>
+</div>
+
+<div id="debugInfo" class="hoverInstruct">
+    <p id="debug"></p>
+</div>
+
+</body>
+</html>

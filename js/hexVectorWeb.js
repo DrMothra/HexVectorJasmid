@@ -9,6 +9,7 @@ var screenManager = (function() {
     var playingTime = 180 * 1000;
     var waitingTimer = null, countdownTimer = null;
     var touched = false;
+    var timedOut = false;
     var startTime, elapsed;
 
     return {
@@ -19,7 +20,10 @@ var screenManager = (function() {
         setStatus: function(state) {
             status = state;
             if(status === PLAYING) {
+                //DEBUG
+                //console.log("PLAYING");
                 startTime = Date.now();
+                timedOut = false;
             }
         },
 
@@ -33,7 +37,7 @@ var screenManager = (function() {
 
         startWaiting: function() {
             //DEBUG
-            console.log("Started waiting...");
+            //console.log("Started waiting...");
 
             waitingTimer = setInterval(function () {
                 elapsed = Date.now() - startTime;
@@ -56,17 +60,18 @@ var screenManager = (function() {
 
         startCountdown: function() {
             var countdown = 5;
-            if(status !== TIMED_OUT) {
+            if(status !== TIMED_OUT || timedOut) {
                 $('#countdown').show();
                 $('#continue').show();
                 $('#countdown').html(countdown.toString());
             } else {
                 $('#timeUpContainer').show();
+                timedOut = true;
             }
             countdownTimer = setInterval(function() {
                 //Update clock
                 --countdown;
-                if(status !== TIMED_OUT) {
+                if(status !== TIMED_OUT || timedOut) {
                     $('#countdown').html(countdown.toString());
                 }
                 if(touched) {
@@ -122,17 +127,12 @@ var screenManager = (function() {
 $(document).ready(function() {
     //Get id
     var synced = false;
-    var userId = localStorage.getItem("tabletId");
-    if(userId === null) {
-        //Cannot really carry on without user id
-        alert("No user id set!");
-        return;
-    }
-    //DEBUG
-    console.log("User = ", userId);
     screenManager.init();
 
     var manager = new MidiManager();
+    var userId = 'tablet' + Math.floor((Math.random() * 8) + 1);
+    //DEBUG
+    console.log("User id = ", userId);
     manager.init(userId, dataLoaded);
 
     //DON'T CONNECT TO WEBSOCKET SERVER FOR NOW
@@ -200,11 +200,7 @@ $(document).ready(function() {
         return false;
     });
 
-    var gameHeight = window.innerHeight;
-    var gameWidth = gameHeight * 5 / 8;
-    var baseHeight = 0.25;
-    var blockHeight = gameHeight * baseHeight;
-    var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.CANVAS, 'playArea');
+    var game = new Phaser.Game("100%", "100%", Phaser.CANVAS, 'playArea');
     $('#logo').on("click", function() {
         //Full screen
         if(allLoaded) {
@@ -223,7 +219,7 @@ $(document).ready(function() {
 
     document.getElementById('playArea').addEventListener("reset", function() {
         //DEBUG
-        console.log("Received reset");
+        //console.log("Received reset");
         resetApp();
     }, false);
 
@@ -240,6 +236,14 @@ $(document).ready(function() {
         $('#countdown').hide();
     }
 
+    /*
+    window.addEventListener('resize', function(event) {
+        //DEBUG
+        console.log("Resize event");
+        game.state.states['Pyramid'].reDraw();
+    }, false);
+    */
+
     var Pyramid = {
         preload: function() {
             game.load.image('vector', 'assets/vectorHex.png');
@@ -248,10 +252,14 @@ $(document).ready(function() {
 
         create: function() {
             //Draw background first
+            this.gameHeight = window.innerHeight;
+            this.gameWidth = this.gameHeight * 5 / 8;
+            this.baseHeight = 0.25;
+            this.blockHeight = this.gameHeight * this.baseHeight;
             var i;
             var numNotes = 6;
-            this.indent = (0.15 * gameWidth) + window.innerWidth*0.3;
-            this.originYOffset = 0.125 * gameHeight;
+            this.indent = (0.15 * this.gameWidth) + window.innerWidth*0.3;
+            this.originYOffset = 0.125 * this.gameHeight;
             this.baseStart = 0.75;
             this.updateRequired = false;
             this.pyramidToTrack = [undefined, undefined, undefined, undefined, undefined, undefined];
@@ -271,8 +279,8 @@ $(document).ready(function() {
             var pointObj;
             for(i=0; i<this.pyramidLinesPercent.length; ++i) {
                 pointObj = {};
-                pointObj.x = (this.pyramidLinesPercent[i].x * gameWidth) + window.innerWidth*0.3;
-                pointObj.y = this.pyramidLinesPercent[i].y * gameHeight;
+                pointObj.x = (this.pyramidLinesPercent[i].x * this.gameWidth) + window.innerWidth*0.3;
+                pointObj.y = this.pyramidLinesPercent[i].y * this.gameHeight;
                 this.pyramidLines.push(pointObj);
             }
             var lineSegment;
@@ -392,7 +400,7 @@ $(document).ready(function() {
         drawBase: function() {
             this.base.lineStyle(0);
             this.base.beginFill(0x404040, 1.0);
-            this.base.drawRect(0, this.baseStart * window.innerHeight, window.innerWidth, baseHeight * window.innerHeight);
+            this.base.drawRect(0, this.baseStart * window.innerHeight, window.innerWidth, this.baseHeight * window.innerHeight);
             this.base.endFill();
         },
 
@@ -557,7 +565,7 @@ $(document).ready(function() {
             }
             endPoint.canDrag = lineOccupied;
             //DEBUG
-            console.log("Line occupied = ", lineOccupied);
+            //console.log("Line occupied = ", lineOccupied);
         },
 
         endPointDragUpdate: function(endPoint, pointer) {
@@ -639,14 +647,14 @@ $(document).ready(function() {
                     if(this.pyramidToTrack[i] === lineNumber+1) {
                         previousCentre = i;
                         //DEBUG
-                        console.log("Previous centre = ", previousCentre);
+                        //console.log("Previous centre = ", previousCentre);
                         break;
                     }
                 }
                 //DEBUG
-                if(previousCentre === undefined) {
-                    console.log("No previous centre");
-                }
+                //if(previousCentre === undefined) {
+                //    console.log("No previous centre");
+                //}
 
                 if(this.trackOccupied[centrePoint]) {
                     if(previousCentre !== undefined) {
@@ -685,7 +693,7 @@ $(document).ready(function() {
                 this.selectPoints();
 
                 //DEBUG
-                console.log("Pyramid ", centrePoint, " = track ", lineNumber+1);
+                //console.log("Pyramid ", centrePoint, " = track ", lineNumber+1);
             }
         },
 
@@ -745,6 +753,14 @@ $(document).ready(function() {
             for(var i=0; i<this.noteLines.length; ++i) {
                 this.resetLine(null, i);
             }
+        },
+
+        reDraw: function() {
+            //Respond to resize events
+            //this.drawBase();
+            this.gameHeight = window.innerHeight;
+            this.gameWidth = this.gameHeight * 5 / 8;
+
         }
     };
 
