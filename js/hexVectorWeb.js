@@ -125,8 +125,15 @@ var screenManager = (function() {
 })();
 
 $(document).ready(function() {
-    //Get id
-    var synced = false;
+    //See if supported
+    var iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    var is_firefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
+    if(iOS || is_firefox) {
+        $('#notSupported').show();
+        return;
+    }
+
+
     screenManager.init();
 
     var manager = new MidiManager();
@@ -236,13 +243,13 @@ $(document).ready(function() {
         $('#countdown').hide();
     }
 
-    /*
+
     window.addEventListener('resize', function(event) {
         //DEBUG
         console.log("Resize event");
         game.state.states['Pyramid'].reDraw();
     }, false);
-    */
+
 
     var Pyramid = {
         preload: function() {
@@ -255,7 +262,6 @@ $(document).ready(function() {
             this.gameHeight = window.innerHeight;
             this.gameWidth = this.gameHeight * 5 / 8;
             this.baseHeight = 0.25;
-            this.blockHeight = this.gameHeight * this.baseHeight;
             var i;
             var numNotes = 6;
             this.indent = (0.15 * this.gameWidth) + window.innerWidth*0.3;
@@ -275,21 +281,7 @@ $(document).ready(function() {
                 {x: 0.850, y: 0.460}
             ];
             //Calculate pyramidLines from percentages
-            this.pyramidLines = [];
-            var pointObj;
-            for(i=0; i<this.pyramidLinesPercent.length; ++i) {
-                pointObj = {};
-                pointObj.x = (this.pyramidLinesPercent[i].x * this.gameWidth) + window.innerWidth*0.3;
-                pointObj.y = this.pyramidLinesPercent[i].y * this.gameHeight;
-                this.pyramidLines.push(pointObj);
-            }
-            var lineSegment;
-            for(i=0; i<this.pyramidLines.length; ++i) {
-                lineSegment = {};
-                lineSegment.x = this.pyramidLines[i].x;
-                lineSegment.y = this.pyramidLines[i].y;
-                this.pyramidStartLines.push(lineSegment);
-            }
+            this.createPyramid();
             this.lineSpacing = (this.pyramidLines[2].x - this.pyramidLines[0].x) / 5;
             this.noteLines = [];
             this.endPoints = [];
@@ -319,7 +311,7 @@ $(document).ready(function() {
 
             //Lines that trigger tracks
             this.lineXScale = 0.25;
-            this.lineYScale = 0.3;
+            this.lineYScale = (this.baseHeight * window.innerHeight * 0.8) / this.lineLength;
             for(i=0; i<numNotes; ++i) {
                 this.noteLines.push(game.add.sprite((this.lineSpacing*i) + this.indent, game.world.height - this.originYOffset, 'vector'));
                 this.noteLines[i].lineNumber = i;
@@ -398,10 +390,28 @@ $(document).ready(function() {
         },
 
         drawBase: function() {
-            this.base.lineStyle(0);
+            this.base.clear();
             this.base.beginFill(0x404040, 1.0);
             this.base.drawRect(0, this.baseStart * window.innerHeight, window.innerWidth, this.baseHeight * window.innerHeight);
             this.base.endFill();
+        },
+
+        createPyramid: function() {
+            this.pyramidLines = [];
+            var pointObj;
+            for(var i=0; i<this.pyramidLinesPercent.length; ++i) {
+                pointObj = {};
+                pointObj.x = (this.pyramidLinesPercent[i].x * this.gameWidth) + window.innerWidth*0.3;
+                pointObj.y = this.pyramidLinesPercent[i].y * this.gameHeight;
+                this.pyramidLines.push(pointObj);
+            }
+            var lineSegment;
+            for(i=0; i<this.pyramidLines.length; ++i) {
+                lineSegment = {};
+                lineSegment.x = this.pyramidLines[i].x;
+                lineSegment.y = this.pyramidLines[i].y;
+                this.pyramidStartLines.push(lineSegment);
+            }
         },
 
         drawPyramid: function() {
@@ -442,11 +452,26 @@ $(document).ready(function() {
             this.graphics.lineTo(this.pyramidLines[3].x, this.pyramidLines[3].y);
             this.graphics.moveTo(this.pyramidLines[1].x, this.pyramidLines[1].y);
             this.graphics.lineTo(this.pyramidLines[2].x, this.pyramidLines[2].y);
+        },
 
+        drawEndpoints: function() {
+            for(var i=0; i<this.pyramidLines.length-2; ++i) {
+                this.endPoints[i].x = this.pyramidLines[i].x;
+                this.endPoints[i].y = this.pyramidLines[i].y;
+            }
+        },
+
+        drawLines: function() {
+            for(var i=0; i<this.noteLines.length; ++i) {
+                this.noteLines[i].x = (this.lineSpacing*i) + this.indent;
+                this.noteLines[i].y = game.world.height - this.originYOffset;
+                this.noteLines[i].scale.setTo(this.lineXScale, this.lineYScale);
+            }
         },
 
         calculateLineProperties: function() {
             //Centre points
+            this.shapeCentres = [];
             var i;
             var centreX, centreY, centreObj;
             for(i=0; i<this.pyramidLines.length-1; ++i) {
@@ -757,10 +782,22 @@ $(document).ready(function() {
 
         reDraw: function() {
             //Respond to resize events
-            //this.drawBase();
+            game.scale.setGameSize(window.innerWidth, window.innerHeight);
             this.gameHeight = window.innerHeight;
             this.gameWidth = this.gameHeight * 5 / 8;
-
+            this.indent = (0.15 * this.gameWidth) + window.innerWidth*0.3;
+            this.originYOffset = 0.125 * this.gameHeight;
+            this.lineSpacing = (this.pyramidLines[2].x - this.pyramidLines[0].x) / 5;
+            this.lineYScale = (this.baseHeight * window.innerHeight * 0.8) / this.lineLength;
+            this.drawBase();
+            this.drawLines();
+            this.createPyramid();
+            this.drawEndpoints();
+            this.calculateLineProperties();
+            this.updateLineProperties();
+            this.musicGroup.getBounds();
+            this.updateRequired = true;
+            this.update();
         }
     };
 

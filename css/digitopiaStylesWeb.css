@@ -40,18 +40,9 @@ body {
     background: black;
 }
 #playArea canvas {
-    margin: 0 auto;
-}
-#leftBlock,
-#rightBlock {
-    background: #404040;
-    bottom: 0;
-}
-#leftBlock {
-    left: 0;
-}
-#rightBlock {
-    right: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
 }
 .hide {
     display: none;
@@ -78,4 +69,15 @@ body {
     font-size: 3.2vw;
     bottom: 5%;
     left: 39%;
+}
+#notSupported {
+    top: 25%;
+    left: 20%;
+}
+#notSupported p {
+    background: #629eff;
+    padding: 1%;
+    font-family: Arial;
+    font-size: 2vw;
+    border-radius: 10px;
 }
