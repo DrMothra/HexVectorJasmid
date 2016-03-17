@@ -303,11 +303,12 @@ $(document).ready(function() {
             this.backGround = 0x868686;
             this.lineColour = this.foreGround;
             this.drawPyramid();
+            this.graphics.getBounds();
 
             this.musicGroup = game.add.group();
             this.musicGroup.add(this.graphics);
 
-            this.musicGroup.getBounds();
+            //this.musicGroup.getBounds();
 
             //Lines that trigger tracks
             this.lineXScale = 0.25;
@@ -384,6 +385,7 @@ $(document).ready(function() {
                 this.graphics.clear();
 
                 this.drawPyramid();
+                this.graphics.getBounds();
                 this.updateRequired = false;
                 this.reset = false;
             }
@@ -418,6 +420,7 @@ $(document).ready(function() {
             var i;
             if(this.reset) {
                 var lineNumber;
+                /*
                 for(i=0; i<this.pyramidLines.length; ++i) {
                     this.pyramidLines[i].x = this.pyramidStartLines[i].x;
                     this.pyramidLines[i].y = this.pyramidStartLines[i].y;
@@ -426,6 +429,7 @@ $(document).ready(function() {
                     this.endPoints[i].x = this.endPointsStart[i].x;
                     this.endPoints[i].y = this.endPointsStart[i].y;
                 }
+                */
                 for(i=0; i<this.trackOccupied.length; ++i) {
                     if(this.trackOccupied[i]) {
                         //Get line from track
@@ -570,9 +574,7 @@ $(document).ready(function() {
             var lineBounds = noteLine.getBounds();
             var rectBounds = this.musicGroup.getBounds();
 
-            //console.log("Number =", sprite.lineNumber);
-
-            if(Phaser.Rectangle.intersects(lineBounds, rectBounds)) {
+            if(lineBounds.intersects(rectBounds)) {
                 this.snapToLine(pointer, noteLine.lineNumber);
             } else {
                 this.resetLine(pointer, noteLine.lineNumber, undefined);
@@ -795,9 +797,8 @@ $(document).ready(function() {
             this.drawEndpoints();
             this.calculateLineProperties();
             this.updateLineProperties();
-            this.musicGroup.getBounds();
             this.updateRequired = true;
-            this.update();
+            //this.update();
         }
     };
 
