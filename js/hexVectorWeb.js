@@ -209,7 +209,6 @@ $(document).ready(function() {
 
     var game = new Phaser.Game("100%", "100%", Phaser.CANVAS, 'playArea');
     $('#logo').on("click", function() {
-        //Full screen
         if(allLoaded) {
             $('#logo').hide();
             $('#progress').hide();
@@ -271,7 +270,6 @@ $(document).ready(function() {
             this.pyramidToTrack = [undefined, undefined, undefined, undefined, undefined, undefined];
             this.reset = true;
             this.lineLength = 484;
-            this.pyramidStartLines = [];
             this.pyramidLinesPercent = [
                 {x: 0.184, y: 0.313},
                 {x: 0.524, y: 0.242},
@@ -285,7 +283,6 @@ $(document).ready(function() {
             this.lineSpacing = (this.pyramidLines[2].x - this.pyramidLines[0].x) / 5;
             this.noteLines = [];
             this.endPoints = [];
-            this.endPointsStart = [];
             this.trackOccupied = [];
             this.shapeCentres = [];
 
@@ -365,14 +362,7 @@ $(document).ready(function() {
             this.endPoints[2].linesOccupied = [1, 2, 4];
             this.endPoints[3].linesOccupied = [2, 3, 5];
 
-            //Need to keep record of start positions so we can reset
-            var point;
-            for(i=0; i<this.endPoints.length; ++i) {
-                point = {};
-                point.x = this.endPoints[i].x;
-                point.y = this.endPoints[i].y;
-                this.endPointsStart.push(point);
-            }
+            this.updateStartPoints();
 
             //Update screen manager
             game.input.onDown.add(function() {
@@ -400,6 +390,7 @@ $(document).ready(function() {
 
         createPyramid: function() {
             this.pyramidLines = [];
+            this.pyramidStartLines = [];
             var pointObj;
             for(var i=0; i<this.pyramidLinesPercent.length; ++i) {
                 pointObj = {};
@@ -420,7 +411,6 @@ $(document).ready(function() {
             var i;
             if(this.reset) {
                 var lineNumber;
-                /*
                 for(i=0; i<this.pyramidLines.length; ++i) {
                     this.pyramidLines[i].x = this.pyramidStartLines[i].x;
                     this.pyramidLines[i].y = this.pyramidStartLines[i].y;
@@ -429,7 +419,7 @@ $(document).ready(function() {
                     this.endPoints[i].x = this.endPointsStart[i].x;
                     this.endPoints[i].y = this.endPointsStart[i].y;
                 }
-                */
+
                 for(i=0; i<this.trackOccupied.length; ++i) {
                     if(this.trackOccupied[i]) {
                         //Get line from track
@@ -462,6 +452,18 @@ $(document).ready(function() {
             for(var i=0; i<this.pyramidLines.length-2; ++i) {
                 this.endPoints[i].x = this.pyramidLines[i].x;
                 this.endPoints[i].y = this.pyramidLines[i].y;
+            }
+        },
+
+        updateStartPoints: function() {
+            //Need to keep record of start positions so we can reset
+            this.endPointsStart = [];
+            var point;
+            for(var i=0; i<this.endPoints.length; ++i) {
+                point = {};
+                point.x = this.endPoints[i].x;
+                point.y = this.endPoints[i].y;
+                this.endPointsStart.push(point);
             }
         },
 
@@ -795,6 +797,7 @@ $(document).ready(function() {
             this.drawLines();
             this.createPyramid();
             this.drawEndpoints();
+            this.updateStartPoints();
             this.calculateLineProperties();
             this.updateLineProperties();
             this.updateRequired = true;

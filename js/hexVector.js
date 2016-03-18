@@ -7,8 +7,10 @@ var screenManager = (function() {
     var continueTime = 30 * 1000;
     var countdownTime = 1000;
     var playingTime = 180 * 1000;
-    var waitingTimer = null, countdownTimer = null, playingTimer = null;
+    var waitingTimer = null, countdownTimer = null;
     var touched = false;
+    var timedOut = false;
+    var startTime, elapsed;
 
     return {
         init: function() {
@@ -17,6 +19,12 @@ var screenManager = (function() {
 
         setStatus: function(state) {
             status = state;
+            if(status === PLAYING) {
+                //DEBUG
+                //console.log("PLAYING");
+                startTime = Date.now();
+                timedOut = false;
+            }
         },
 
         getStatus: function() {
@@ -29,51 +37,42 @@ var screenManager = (function() {
 
         startWaiting: function() {
             //DEBUG
-            console.log("Started waiting...");
+            //console.log("Started waiting...");
 
             waitingTimer = setInterval(function () {
-                if (!touched) {
+                elapsed = Date.now() - startTime;
+                if(elapsed >= playingTime) {
+                    status = TIMED_OUT;
                     clearInterval(waitingTimer);
-                    waitingTimer = null;
-                    if(countdownTimer !== null) return;
-                    $('#timeUpContainer').hide();
-                    $('#continue').show();
                     screenManager.startCountdown();
                 } else {
-                    touched = false;
+                    if (!touched) {
+                        clearInterval(waitingTimer);
+                        waitingTimer = null;
+                        $('#timeUpContainer').hide();
+                        $('#continue').show();
+                        screenManager.startCountdown();
+                    } else {
+                        touched = false;
+                    }
                 }
             }, continueTime);
         },
 
-        startPlaying: function() {
-            //DEBUG
-            console.log("Started playing");
-
-            playingTimer = setInterval(function() {
-                //DEBUG
-                console.log("Play timeout");
-                $('#timeUpContainer').show();
-                status = TIMED_OUT;
-                clearInterval(playingTimer);
-                playingTimer = null;
-                if(countdownTimer !== null) return;
-                screenManager.startCountdown();
-            }, playingTime);
-        },
-
         startCountdown: function() {
             var countdown = 5;
-            if(status !== TIMED_OUT) {
+            if(status !== TIMED_OUT || timedOut) {
                 $('#countdown').show();
                 $('#continue').show();
                 $('#countdown').html(countdown.toString());
             } else {
                 $('#timeUpContainer').show();
+                timedOut = true;
             }
             countdownTimer = setInterval(function() {
                 //Update clock
                 --countdown;
-                if(status !== TIMED_OUT) {
+                if(status !== TIMED_OUT || timedOut) {
                     $('#countdown').html(countdown.toString());
                 }
                 if(touched) {
@@ -85,6 +84,7 @@ var screenManager = (function() {
                     $('#timeUpContainer').hide();
                     touched = false;
                     screenManager.startWaiting();
+                    return;
                 }
                 if(countdown <= 0) {
                     clearInterval(countdownTimer);
@@ -101,7 +101,6 @@ var screenManager = (function() {
         stopTimers: function() {
             clearInterval(waitingTimer);
             clearInterval(countdownTimer);
-            clearInterval(playingTimer);
             waitingTimer = countdownTimer = playingTimer = null;
         },
 
@@ -128,7 +127,6 @@ var screenManager = (function() {
 
 $(document).ready(function() {
     //Get id
-    var synced = false;
     var userId = localStorage.getItem("tabletId");
     if(userId === null) {
         //Cannot really carry on without user id
@@ -136,7 +134,7 @@ $(document).ready(function() {
         return;
     }
     //DEBUG
-    console.log("User = ", userId);
+    //console.log("User = ", userId);
     screenManager.init();
 
     var manager = new MidiManager();
@@ -219,7 +217,6 @@ $(document).ready(function() {
                 $('#resetContainer').show();
                 screenManager.setStatus(PLAYING);
                 screenManager.startWaiting();
-                screenManager.startPlaying();
             }
         } else {
             screenManager.launchIntoFullscreen(document.documentElement); // the whole page
