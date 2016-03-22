@@ -11,6 +11,7 @@ var screenManager = (function() {
     var touched = false;
     var timedOut = false;
     var startTime, elapsed;
+    var needsResize = false;
 
     return {
         init: function() {
@@ -33,6 +34,14 @@ var screenManager = (function() {
 
         touched: function() {
             touched = true;
+        },
+
+        setResize: function(status) {
+            needsResize = status;
+        },
+
+        getResize: function() {
+            return needsResize;
         },
 
         startWaiting: function() {
@@ -215,6 +224,10 @@ $(document).ready(function() {
             $('#playArea').show();
             $('#resetContainer').show();
             screenManager.setStatus(PLAYING);
+            if(screenManager.getResize()) {
+                screenManager.setResize(false);
+                game.state.states['Pyramid'].reDraw();
+            }
             screenManager.startWaiting();
         }
     });
@@ -244,9 +257,12 @@ $(document).ready(function() {
 
 
     window.addEventListener('resize', function(event) {
-        //DEBUG
-        console.log("Resize event");
-        game.state.states['Pyramid'].reDraw();
+        if(screenManager.getStatus() != STARTING) {
+            game.state.states['Pyramid'].reDraw();
+        } else {
+            screenManager.setResize(true);
+        }
+
     }, false);
 
 
